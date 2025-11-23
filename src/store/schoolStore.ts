@@ -29,6 +29,7 @@ export const useSchoolStore = create<SchoolStore>()(
         activeView: 'dashboard',
         sidebarCollapsed: false,
         loading: false,
+        currentLanguage: 'en',
 
         // basic setters
         setCurrentUser: (user) => set({ currentUser: user }),
@@ -45,6 +46,7 @@ export const useSchoolStore = create<SchoolStore>()(
         setAttendance: (attendance) => set({ attendance }),
         setCirculars: (circulars) => set({ circulars }),
         setHomework: (homework) => set({ homework }),
+        setCurrentLanguage: (code) => set({ currentLanguage: code }),
 
         // exams (grouped) management
         setExams: (exams) => set({ exams }),
