@@ -1,8 +1,9 @@
 import { db } from '../../firebase.js';
-import { Teacher } from '../../models/Teacher.js';
+import type teacher from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../error.js';
 import logger from '../../utils/logger.js';
 import { mapDocsWithKey } from '../../utils/helper.js';
+type Teacher = typeof teacher;
 
 if (!db)
   throw new AppError(
@@ -33,7 +34,7 @@ export const getTeacher = async (
 
 export const deleteTeacher = async (teacherId: string): Promise<boolean> => {
   const teacherData = await getTeacher(teacherId);
-  if (!teacherData.length) {
+  if (!teacherData.length || teacherData[0].teacher === null) {
     logger.info(`No teacher found to delete with ID: ${teacherId}`);
     return false;
   }
@@ -79,7 +80,7 @@ export const updateTeacher = async (
 ): Promise<boolean> => {
   logger.info(`Updating teacher with ID: ${teacherId}`);
   const teacherData = await getTeacher(teacherId);
-  if (!teacherData.length) {
+  if (!teacherData.length || teacherData[0].teacher === null) {
     logger.info(`No teacher found to update with ID: ${teacherId}`);
     return false;
   }

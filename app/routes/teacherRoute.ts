@@ -6,7 +6,8 @@ import {
   updateTeacherDetails
 } from '../service/teacher/teacher.js';
 import { Router, Request, Response } from 'express';
-import { Teacher } from '../models/Teacher.js';
+import type teacher from '@setupati-school/setupati-types/models';
+type Teacher = typeof teacher;
 
 const teacherRouter = Router();
 

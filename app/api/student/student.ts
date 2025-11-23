@@ -1,8 +1,9 @@
 import { db } from '../../firebase.js';
-import { Student } from '../../models/Student.js';
+import type student from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../error.js';
 import logger from './../../utils/logger.js';
 import { mapDocsWithKey } from '../../utils/helper.js';
+type Student = typeof student;
 
 if (!db)
   throw new AppError(
@@ -34,7 +35,7 @@ export const deleteStudent = async (
   studentRollNo: string
 ): Promise<boolean> => {
   const studentData = await getStudent(studentRollNo);
-  if (!studentData.length) {
+  if (!studentData.length || studentData[0].student === null) {
     logger.info(`No students found with roll number: ${studentRollNo}`);
     return false;
   }
@@ -82,7 +83,7 @@ export const updateStudent = async (
   data: Partial<Student>
 ): Promise<boolean> => {
   const studentData = await getStudent(studentRollNo);
-  if (!studentData.length) {
+  if (!studentData.length || studentData[0].student === null) {
     logger.info(`No students found with roll number: ${studentRollNo}`);
     return false;
   }

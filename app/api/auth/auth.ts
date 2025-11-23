@@ -4,7 +4,7 @@ import { AppError, HttpCode } from '../../error.js';
 
 if (!db || !auth)
   throw new AppError(
-    'Database or Auth connection not established',
+    'Database or Auth connection not established successfully',
     HttpCode.INTERNAL_SERVER_ERROR
   );
 const userCollection = db.collection('users');

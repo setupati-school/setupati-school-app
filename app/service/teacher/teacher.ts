@@ -6,8 +6,9 @@ import {
   searchTeacher as searchTeacherApi,
   updateTeacher
 } from '../../api/teacher/teacher.js';
-import { Teacher } from '../../models/Teacher.js';
+import type teacher from '@setupati-school/setupati-types/models';
 import logger from '../../utils/logger.js';
+type Teacher = typeof teacher;
 
 export const createTeacher = async (
   req: Request<{ Teacher: Teacher }>,
@@ -30,7 +31,7 @@ export const searchTeacher = async (
   try {
     const { teacher_id: teacherId } = req.params;
     if (!teacherId) {
-      res.status(400).json({ error: 'Teacher ID is required' });
+      return res.status(400).json({ error: 'Teacher ID is required' });
     }
     const teachers = await searchTeacherApi(teacherId);
     res.status(200).json(teachers);
@@ -47,12 +48,12 @@ export const deleteTeacherDetails = async (
   try {
     const { teacher_id: teacherId } = req.params;
     if (!teacherId) {
-      res.status(400).json({ error: 'Teacher ID is required' });
+      return res.status(400).json({ error: 'Teacher ID is required' });
     }
     const deleted = await deleteTeacher(teacherId);
     logger.info('deleted teacher data', deleted);
     if (!deleted) {
-      res.status(404).json({ error: 'Teacher not found' });
+      return res.status(404).json({ error: 'Teacher not found' });
     }
     res.status(204).json({});
   } catch (error) {
@@ -78,12 +79,12 @@ export const updateTeacherDetails = async (
   try {
     const { teacher_id: teacherId } = req.params;
     if (!teacherId) {
-      res.status(400).json({ error: 'Teacher ID is required' });
+      return res.status(400).json({ error: 'Teacher ID is required' });
     }
     const data = req?.body;
     const updated = await updateTeacher(teacherId, data);
     if (!updated) {
-      res.status(404).json({ error: 'Teacher not found' });
+      return res.status(404).json({ error: 'Teacher not found' });
     }
     res.status(204).json({});
   } catch (error) {

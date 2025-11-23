@@ -115,11 +115,15 @@ jobs:
 
       - name: 🧹 Run Linter
         run: npm run lint
+      
+      - name: Configure git safe.directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: 🔍 Check for app folder changes
         id: changes
         run: |
-          CHANGED=$(git diff --name-only ${{ github.sha }}^ ${{ github.sha }} | grep '^app/' || true)
+          git fetch origin main
+          CHANGED=$(git diff --name-only HEAD origin/main -- app/)
           if [ -n "$CHANGED" ]; then
             echo "deploy=true" >> $GITHUB_ENV
             echo "✅ Changes found in app/: $CHANGED"
@@ -133,23 +137,22 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SETUPATI_SCHOOL_APP }}
+          firebaseServiceAccount: $FIREBASE_SERVICE_ACCOUNT_HOSTING
           projectId: setupati-school-app
           channelId: pr-${{ github.event.pull_request.number }}
 
       - name: 🚀 Deploy Live
-        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/releases/release'))
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SETUPATI_SCHOOL_APP }}
+          firebaseServiceAccount: $FIREBASE_SERVICE_ACCOUNT_HOSTING
           projectId: setupati-school-app
           channelId: live
 
       - name: 🛠️ Deploy Backend to Render
-        if: env.deploy == 'true' && github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/releases/release'))
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        if: env.deploy == 'true'
+        shell: bash
         run: |
           echo "🚀 Deploying backend to Render..."
-          curl -X POST "$RENDER_DEPLOY_HOOK_URL"
+          URL=$(echo "$RENDER_DEPLOY_HOOK_URL" | tr -d '[:space:]')
+          curl "$URL"
