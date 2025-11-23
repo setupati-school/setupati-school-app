@@ -1,4 +1,3 @@
-// src/components/zod.ts
 import { z } from 'zod';
 
 const genderEnum = z.enum(['Male', 'Female', 'Other']);
@@ -23,7 +22,9 @@ export const studentSchema = z
       country: z.string().min(1, 'Country is required'),
       pincode: z.string().min(1, 'Pincode is required'),
       blood_group: z.string().min(1, 'Blood group is required'),
-      aadhar_no: z.string().min(1, 'Aadhar number is required')
+      aadhar_no: z
+        .string()
+        .regex(/^\d{12}$/, 'Aadhar number must be exactly 12 digits')
     }),
     parent: z.object({
       f_name: z.string().min(1, 'Parent first name required'),
@@ -65,6 +66,28 @@ export const teacherSchema = z
         .string()
         .regex(/^\d{10}$/, 'Phone number must be exactly 10 digits')
     }),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z
+      .string()
+      .min(8, 'Confirm password must be at least 8 characters')
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword']
+  });
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional().default(false)
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email')
+});
+
+export const resetPasswordSchema = z
+  .object({
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z
       .string()

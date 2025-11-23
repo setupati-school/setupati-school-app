@@ -11,13 +11,16 @@ import { User } from '../../models/User.js';
 import { firebaseErrorPraser } from '../../Error/firebaseErrorPraser.js';
 import {
   StudentSchemaPayload,
-  TeacherSchemaPayload
+  TeacherSchemaPayload,
+  validateEmailSchemaPayload,
+  getUserSchemaPayload,
+  deleteUserSchemaPayload
 } from '../../zod/authSchema.js';
 import logger from '../../utils/logger.js';
 
 export const createStudentAndParent = async (req: Request, res: Response) => {
   try {
-    const { student, parent, password } = req.body as StudentSchemaPayload;
+    const { student, parent, password } = req?.body as StudentSchemaPayload;
 
     const result = await createStudentAndParentApi(student, parent, password);
 
@@ -40,7 +43,7 @@ export const createStudentAndParent = async (req: Request, res: Response) => {
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {
-    const { teacher, password } = req.body as TeacherSchemaPayload;
+    const { teacher, password } = req?.body as TeacherSchemaPayload;
 
     const result = await createTeacherApi(teacher, password);
 
@@ -96,13 +99,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const uid = req.params?.uid;
-
-    if (!uid || uid.trim() === '') {
-      res.status(400).json({ error: 'User ID is required' });
-      return;
-    }
-
+    const { uid } = req?.params as getUserSchemaPayload;
     const user: User = await getUserByIdApi(uid);
     res.status(200).json({ user: user });
   } catch (err: unknown) {
@@ -129,11 +126,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const validateEmail = async (req: Request, res: Response) => {
   try {
-    const email = req.body?.email;
-    if (!email || email.trim() === '') {
-      res.status(400).json({ error: 'Email ID is required' });
-      return;
-    }
+    const { email } = req?.body as validateEmailSchemaPayload;
     const isValid = await validateEmailApi(email);
     res.status(200).json({ isValid: isValid });
   } catch (err: unknown) {
@@ -153,11 +146,7 @@ export const validateEmail = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const uid = req.params?.uid;
-    if (!uid || uid.trim() === '') {
-      res.status(400).json({ error: 'User ID is required' });
-      return;
-    }
+    const { uid } = req?.params as deleteUserSchemaPayload;
     await deleteUserApi(uid);
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (err) {

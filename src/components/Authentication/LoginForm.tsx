@@ -1,4 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AxiosError } from 'axios';
+import {
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  signInWithEmailAndPassword
+} from 'firebase/auth';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,61 +24,59 @@ import { Eye, EyeOff, Mail, Lock, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import {
-  setPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence,
-  signInWithEmailAndPassword
-} from 'firebase/auth';
 import { useSchoolStore } from '@/store/schoolStore';
 import api from '@/lib/axiosConfig';
 import { User as UserData } from '@/types';
-import { FormDataType } from './AuthLayout';
+import { loginSchema } from '@/components/zod';
 
 interface LoginFormProps {
   toggleCurrentView: (view: 'login' | 'forgot' | 'reset') => void;
-  formData: FormDataType;
-  handleInputChange: (field: string, value: string) => void;
-  handleBooleanInputChange: (field: string, value: boolean) => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({
-  toggleCurrentView,
-  formData,
-  handleInputChange,
-  handleBooleanInputChange
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+const LoginFormComponent: React.FC<LoginFormProps> = ({
+  toggleCurrentView
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { setCurrentUser } = useSchoolStore();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false
+    },
+    mode: 'onSubmit'
+  });
 
-    setIsLoading(true);
-
+  const onSubmit = async (values: LoginFormValues) => {
     try {
-      const userRecord = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
       await setPersistence(
         auth,
-        rememberMe ? browserLocalPersistence : browserSessionPersistence
+        values.rememberMe ? browserLocalPersistence : browserSessionPersistence
+      );
+
+      const userRecord = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
       );
 
       const user = userRecord.user;
-
       if (!user) {
         throw new Error('User not found.');
       }
 
       const response = await api.get(`/api/v1/auth/users/${user.uid}`);
-
       const userData: UserData = response.data.user;
 
       if (!userData) {
@@ -84,23 +93,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       navigate('/dashboard');
     } catch (error: unknown) {
-      let errorMessage = '';
-      if ((error as { code: string }).code === 'auth/invalid-credential') {
+      let errorMessage = 'Failed to login. Please try again.';
+
+      const err = error as any;
+
+      if (err?.code === 'auth/invalid-credential') {
         errorMessage = 'Incorrect password or email address.';
-      } else {
-        errorMessage =
-          error instanceof Error
-            ? error.response?.data?.error || error?.message
-            : 'Failed to login. Please try again.';
+      } else if ((error as AxiosError)?.response?.data) {
+        const data: any = (error as AxiosError).response?.data;
+        if (data?.error) errorMessage = data.error;
+      } else if (error instanceof Error && error.message) {
+        errorMessage = error.message;
       }
+
+      setError('password', {
+        type: 'server',
+        message: errorMessage
+      });
 
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -120,7 +135,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Email Field */}
           <div className="space-y-2">
             <Label
@@ -135,12 +150,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
                 className="pl-10 border-border focus:ring-accent"
-                required
+                {...register('email')}
               />
             </div>
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
           </div>
 
           {/* Password Field */}
@@ -155,30 +171,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 id="password"
-                type={formData.showPassword ? 'text' : 'password'}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
                 className="pl-10 pr-10 border-border focus:ring-accent"
-                required
+                {...register('password')}
               />
               <button
                 type="button"
-                onClick={() =>
-                  handleBooleanInputChange(
-                    'showPassword',
-                    !formData?.showPassword
-                  )
-                }
+                onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {formData.showPassword ? (
+                {showPassword ? (
                   <EyeOff className="w-4 h-4" />
                 ) : (
                   <Eye className="w-4 h-4" />
                 )}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           {/* Remember me & Forgot password */}
@@ -187,9 +201,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <input
                 id="remember"
                 type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 text-accent border-border rounded focus:ring-accent"
+                {...register('rememberMe')}
               />
               <Label
                 htmlFor="remember"
@@ -213,12 +226,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             variant="login"
             size="lg"
             className="w-full"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
       </CardContent>
     </Card>
   );
 };
+
+export const LoginForm = memo(LoginFormComponent);

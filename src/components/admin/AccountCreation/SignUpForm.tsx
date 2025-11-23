@@ -1,4 +1,3 @@
-// src/components/auth/SignUpForm.tsx
 import React, { useState, useMemo } from 'react';
 import {
   useForm,
@@ -27,12 +26,19 @@ import { studentSchema, teacherSchema } from '@/components/zod';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/axiosConfig';
 
-// ---- Types from zod ----
 type StudentForm = z.infer<typeof studentSchema>;
 type TeacherForm = z.infer<typeof teacherSchema>;
 
-// ---- Precompute static data once (module scope) ----
 const ALL_COUNTRIES = Country.getAllCountries();
+
+const formatAadhaar = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 12);
+  const parts: string[] = [];
+  for (let i = 0; i < digits.length; i += 4) {
+    parts.push(digits.slice(i, i + 4));
+  }
+  return parts.join('-');
+};
 
 const SignUpFormInner: React.FC = () => {
   const { toast } = useToast();
@@ -93,10 +99,10 @@ const SignUpFormInner: React.FC = () => {
   });
 
   const studentStateOptions = useMemo(() => {
-    if (studentCountryCode) {
-      return State.getStatesOfCountry(studentCountryCode);
+    if (!studentCountryCode) {
+      return [] as ReturnType<typeof State.getStatesOfCountry>;
     }
-    return State.getAllStates();
+    return State.getStatesOfCountry(studentCountryCode);
   }, [studentCountryCode]);
 
   const studentCityOptions = useMemo(() => {
@@ -106,7 +112,6 @@ const SignUpFormInner: React.FC = () => {
     if (studentCountryCode) {
       return City.getCitiesOfCountry(studentCountryCode);
     }
-    // no country selected => don't load giant city list
     return [] as ReturnType<typeof City.getCitiesOfState>;
   }, [studentCountryCode, studentStateCode]);
 
@@ -170,19 +175,32 @@ const SignUpFormInner: React.FC = () => {
     simulateUpload(type);
   };
 
+  const applyBackendIssuesToForm = (
+    issues: Array<{ path?: string; message?: string }> | undefined,
+    setError: (name: any, error: { type: string; message: string }) => void
+  ) => {
+    if (!Array.isArray(issues)) return;
+    issues.forEach((issue) => {
+      if (!issue?.path) return;
+      setError(issue.path as any, {
+        type: 'server',
+        message: issue.message || 'Invalid value'
+      });
+    });
+  };
+
   // =============== STUDENT SUBMIT ===============
   const onSubmitStudent: SubmitHandler<StudentForm> = async (data) => {
-    if (studentLoading || studentForm.formState.isSubmitting) return; // double submit guard
+    if (studentLoading || studentForm.formState.isSubmitting) return;
     setStudentLoading(true);
     try {
-      // confirmPassword is NOT sent to backend
       const payload = {
-        student: { ...data.student }, // names for country/state/city
+        student: { ...data.student },
         parent: { ...data.parent },
         password: data.password
       };
 
-      const res = await api.post('/api/v1/auth/create-student', payload);
+      const res = await api.post('/api/v1/auth/signup/create-student', payload);
 
       toast({
         title: 'Created',
@@ -198,23 +216,22 @@ const SignUpFormInner: React.FC = () => {
 
       return res.data;
     } catch (err: any) {
+      const backendError = err?.response?.data;
       const msg =
-        err?.response?.data?.error ||
-        err?.message ||
-        'Failed to create student';
+        backendError?.error || err?.message || 'Failed to create student';
+      applyBackendIssuesToForm(backendError?.issues, studentForm.setError);
       studentForm.setError('root' as any, {
         type: 'server',
         message: msg
       });
+
       toast({ title: 'Error', description: msg, variant: 'destructive' });
-      throw err;
     } finally {
       setStudentLoading(false);
     }
   };
 
   const onInvalidStudent = (errors: FieldErrors<StudentForm>) => {
-    // high–level root error
     studentForm.setError('root' as any, {
       type: 'validation',
       message: 'Please fill all required fields correctly before submitting.'
@@ -236,10 +253,10 @@ const SignUpFormInner: React.FC = () => {
           ...data.teacher,
           experienced_years: Number(data.teacher.experienced_years)
         },
-        password: data.password // confirmPassword not sent
+        password: data.password
       };
 
-      const res = await api.post('/api/v1/admin/create-teacher', payload);
+      const res = await api.post('/api/v1/auth/signup/create-teacher', payload);
 
       toast({
         title: 'Created',
@@ -251,16 +268,18 @@ const SignUpFormInner: React.FC = () => {
 
       return res.data;
     } catch (err: any) {
+      const backendError = err?.response?.data;
       const msg =
-        err?.response?.data?.error ||
-        err?.message ||
-        'Failed to create teacher';
+        backendError?.error || err?.message || 'Failed to create teacher';
+
+      applyBackendIssuesToForm(backendError?.issues, teacherForm.setError);
+
       teacherForm.setError('root' as any, {
         type: 'server',
         message: msg
       });
+
       toast({ title: 'Error', description: msg, variant: 'destructive' });
-      throw err;
     } finally {
       setTeacherLoading(false);
     }
@@ -277,7 +296,6 @@ const SignUpFormInner: React.FC = () => {
       variant: 'destructive'
     });
   };
-
   return (
     <div className="w-full max-w-4xl mx-auto h-auto overflow-visible">
       <Tabs value={tab} onValueChange={(v) => setTab(v)} className="w-full">
@@ -355,7 +373,10 @@ const SignUpFormInner: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>First Name *</Label>
-                      <Input {...studentForm.register('student.f_name')} />
+                      <Input
+                        placeholder="Enter your First Name"
+                        {...studentForm.register('student.f_name')}
+                      />
                       {studentForm.formState.errors.student?.f_name && (
                         <p className="text-sm text-destructive">
                           {studentForm.formState.errors.student.f_name.message}
@@ -365,7 +386,10 @@ const SignUpFormInner: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label>Last Name *</Label>
-                      <Input {...studentForm.register('student.l_name')} />
+                      <Input
+                        placeholder="Enter your Last Name"
+                        {...studentForm.register('student.l_name')}
+                      />
                       {studentForm.formState.errors.student?.l_name && (
                         <p className="text-sm text-destructive">
                           {studentForm.formState.errors.student.l_name.message}
@@ -377,6 +401,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Email *</Label>
                       <Input
                         type="email"
+                        placeholder="example@gmail.com"
                         {...studentForm.register('student.email')}
                       />
                       {studentForm.formState.errors.student?.email && (
@@ -388,7 +413,10 @@ const SignUpFormInner: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label>Roll Number *</Label>
-                      <Input {...studentForm.register('student.roll_no')} />
+                      <Input
+                        placeholder="123456"
+                        {...studentForm.register('student.roll_no')}
+                      />
                       {studentForm.formState.errors.student?.roll_no && (
                         <p className="text-sm text-destructive">
                           {studentForm.formState.errors.student.roll_no.message}
@@ -398,7 +426,10 @@ const SignUpFormInner: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label>Grade/Class *</Label>
-                      <Input {...studentForm.register('student.grade_name')} />
+                      <Input
+                        placeholder="Enter your Grade or class"
+                        {...studentForm.register('student.grade_name')}
+                      />
                       {studentForm.formState.errors.student?.grade_name && (
                         <p className="text-sm text-destructive">
                           {
@@ -454,7 +485,10 @@ const SignUpFormInner: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label>Blood Group *</Label>
-                      <Input {...studentForm.register('student.blood_group')} />
+                      <Input
+                        placeholder="Enter your Blood Group"
+                        {...studentForm.register('student.blood_group')}
+                      />
                       {studentForm.formState.errors.student?.blood_group && (
                         <p className="text-sm text-destructive">
                           {
@@ -465,9 +499,31 @@ const SignUpFormInner: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Aadhaar with visual formatting */}
                     <div className="space-y-2">
                       <Label>Aadhar Number *</Label>
-                      <Input {...studentForm.register('student.aadhar_no')} />
+                      <Controller
+                        control={studentForm.control}
+                        name="student.aadhar_no"
+                        render={({ field }) => (
+                          <Input
+                            inputMode="numeric"
+                            maxLength={14}
+                            placeholder="1234-5678-9012"
+                            value={formatAadhaar(field.value ?? '')}
+                            onChange={(e) => {
+                              const digitsOnly = e.target.value
+                                .replace(/\D/g, '')
+                                .slice(0, 12);
+                              field.onChange(digitsOnly);
+                            }}
+                            className="font-mono tracking-widest"
+                          />
+                        )}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter 12-digit Aadhar number.
+                      </p>
                       {studentForm.formState.errors.student?.aadhar_no && (
                         <p className="text-sm text-destructive">
                           {
@@ -480,7 +536,10 @@ const SignUpFormInner: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label>Phone Number *</Label>
-                      <Input {...studentForm.register('student.phone_num')} />
+                      <Input
+                        placeholder="Enter your 10-digit Phone Number"
+                        {...studentForm.register('student.phone_num')}
+                      />
                       {studentForm.formState.errors.student?.phone_num && (
                         <p className="text-sm text-destructive">
                           {
@@ -494,7 +553,10 @@ const SignUpFormInner: React.FC = () => {
 
                   <div className="space-y-2">
                     <Label>Address *</Label>
-                    <Input {...studentForm.register('student.address_line1')} />
+                    <Input
+                      placeholder="Street address, house no., locality"
+                      {...studentForm.register('student.address_line1')}
+                    />
                     {studentForm.formState.errors.student?.address_line1 && (
                       <p className="text-sm text-destructive">
                         {
@@ -673,7 +735,10 @@ const SignUpFormInner: React.FC = () => {
                     {/* Pincode */}
                     <div className="space-y-2">
                       <Label>Pincode *</Label>
-                      <Input {...studentForm.register('student.pincode')} />
+                      <Input
+                        placeholder="Postal / ZIP code"
+                        {...studentForm.register('student.pincode')}
+                      />
                       {studentForm.formState.errors.student?.pincode && (
                         <p className="text-sm text-destructive">
                           {studentForm.formState.errors.student.pincode.message}
@@ -691,7 +756,10 @@ const SignUpFormInner: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>First Name *</Label>
-                      <Input {...studentForm.register('parent.f_name')} />
+                      <Input
+                        placeholder="Parent's First Name"
+                        {...studentForm.register('parent.f_name')}
+                      />
                       {studentForm.formState.errors.parent?.f_name && (
                         <p className="text-sm text-destructive">
                           {studentForm.formState.errors.parent.f_name.message}
@@ -700,7 +768,10 @@ const SignUpFormInner: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Last Name *</Label>
-                      <Input {...studentForm.register('parent.l_name')} />
+                      <Input
+                        placeholder="Parent's Last Name"
+                        {...studentForm.register('parent.l_name')}
+                      />
                       {studentForm.formState.errors.parent?.l_name && (
                         <p className="text-sm text-destructive">
                           {studentForm.formState.errors.parent.l_name.message}
@@ -711,6 +782,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Date of Birth *</Label>
                       <Input
                         type="date"
+                        placeholder="Parent DOB"
                         {...studentForm.register('parent.dob')}
                       />
                       {studentForm.formState.errors.parent?.dob && (
@@ -781,7 +853,10 @@ const SignUpFormInner: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Phone Number *</Label>
-                      <Input {...studentForm.register('parent.phone_num')} />
+                      <Input
+                        placeholder="Parent's Phone Number"
+                        {...studentForm.register('parent.phone_num')}
+                      />
                       {studentForm.formState.errors.parent?.phone_num && (
                         <p className="text-sm text-destructive">
                           {
@@ -793,7 +868,10 @@ const SignUpFormInner: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Occupation *</Label>
-                      <Input {...studentForm.register('parent.occupation')} />
+                      <Input
+                        placeholder="e.g. Engineer, Homemaker"
+                        {...studentForm.register('parent.occupation')}
+                      />
                       {studentForm.formState.errors.parent?.occupation && (
                         <p className="text-sm text-destructive">
                           {
@@ -815,6 +893,7 @@ const SignUpFormInner: React.FC = () => {
                     <div className="space-y-2 relative">
                       <Label>Password *</Label>
                       <Input
+                        placeholder="Enter your password"
                         type={showStudentPassword ? 'text' : 'password'}
                         {...studentForm.register('password')}
                         className="pr-10"
@@ -842,6 +921,7 @@ const SignUpFormInner: React.FC = () => {
                     <div className="space-y-2 relative">
                       <Label>Confirm Password *</Label>
                       <Input
+                        placeholder="Repeat password"
                         type={showStudentConfirm ? 'text' : 'password'}
                         {...studentForm.register('confirmPassword')}
                         className="pr-10"
@@ -949,7 +1029,10 @@ const SignUpFormInner: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>First Name *</Label>
-                      <Input {...teacherForm.register('teacher.f_name')} />
+                      <Input
+                        placeholder="Enter your First Name"
+                        {...teacherForm.register('teacher.f_name')}
+                      />
                       {teacherForm.formState.errors.teacher?.f_name && (
                         <p className="text-sm text-destructive">
                           {teacherForm.formState.errors.teacher.f_name.message}
@@ -958,7 +1041,10 @@ const SignUpFormInner: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Last Name *</Label>
-                      <Input {...teacherForm.register('teacher.l_name')} />
+                      <Input
+                        placeholder="Enter your Last Name"
+                        {...teacherForm.register('teacher.l_name')}
+                      />
                       {teacherForm.formState.errors.teacher?.l_name && (
                         <p className="text-sm text-destructive">
                           {teacherForm.formState.errors.teacher.l_name.message}
@@ -969,6 +1055,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Email *</Label>
                       <Input
                         type="email"
+                        placeholder="example@gmail.com"
                         {...teacherForm.register('teacher.email')}
                       />
                       {teacherForm.formState.errors.teacher?.email && (
@@ -979,7 +1066,10 @@ const SignUpFormInner: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Phone Number *</Label>
-                      <Input {...teacherForm.register('teacher.phone_num')} />
+                      <Input
+                        placeholder="Enter your 10-digit Phone Number"
+                        {...teacherForm.register('teacher.phone_num')}
+                      />
                       {teacherForm.formState.errors.teacher?.phone_num && (
                         <p className="text-sm text-destructive">
                           {
@@ -991,7 +1081,10 @@ const SignUpFormInner: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Designation *</Label>
-                      <Input {...teacherForm.register('teacher.designation')} />
+                      <Input
+                        placeholder="e.g. Mathematics Teacher"
+                        {...teacherForm.register('teacher.designation')}
+                      />
                       {teacherForm.formState.errors.teacher?.designation && (
                         <p className="text-sm text-destructive">
                           {
@@ -1004,6 +1097,7 @@ const SignUpFormInner: React.FC = () => {
                     <div className="space-y-2">
                       <Label>Qualification *</Label>
                       <Input
+                        placeholder="e.g. M.Sc, B.Ed"
                         {...teacherForm.register('teacher.qualification')}
                       />
                       {teacherForm.formState.errors.teacher?.qualification && (
@@ -1019,6 +1113,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Date of Birth *</Label>
                       <Input
                         type="date"
+                        placeholder="Select date of birth"
                         {...teacherForm.register('teacher.dob')}
                       />
                       {teacherForm.formState.errors.teacher?.dob && (
@@ -1031,6 +1126,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Date of Joining *</Label>
                       <Input
                         type="date"
+                        placeholder="Select joining date"
                         {...teacherForm.register('teacher.doj')}
                       />
                       {teacherForm.formState.errors.teacher?.doj && (
@@ -1043,6 +1139,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Years of Experience *</Label>
                       <Input
                         type="number"
+                        placeholder="e.g. 5"
                         {...teacherForm.register('teacher.experienced_years')}
                       />
                       {teacherForm.formState.errors.teacher
@@ -1095,6 +1192,7 @@ const SignUpFormInner: React.FC = () => {
                     <div className="relative space-y-2">
                       <Label>Password *</Label>
                       <Input
+                        placeholder="Enter your password"
                         type={showTeacherPassword ? 'text' : 'password'}
                         {...teacherForm.register('password')}
                         className="pr-10"
@@ -1122,6 +1220,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Confirm Password *</Label>
                       <Input
                         type={showTeacherConfirm ? 'text' : 'password'}
+                        placeholder="Repeat password"
                         {...teacherForm.register('confirmPassword')}
                         className="pr-10"
                       />
