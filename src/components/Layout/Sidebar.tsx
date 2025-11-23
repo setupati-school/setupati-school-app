@@ -15,6 +15,8 @@ import {
   ChevronRight,
   School
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../../i18n';
 
 const navigationItems = [
   {
@@ -66,6 +68,8 @@ export const Sidebar = () => {
 
   // On mobile, always keep sidebar collapsed
   const isCollapsed = isMobile ? true : sidebarCollapsed;
+  const { t } = useTranslation();
+  i18n.language = useSchoolStore(state => state.currentLanguage);
 
   return (
     <div
@@ -83,7 +87,7 @@ export const Sidebar = () => {
                 <School className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">Setupati</h1>
+                <h1 className="font-bold text-lg text-foreground">{t('title')}</h1>
                 <p className="text-xs text-muted-foreground">
                   School Management
                 </p>
