@@ -19,41 +19,49 @@ import {
 const navigationItems = [
   {
     id: 'dashboard',
+    slug:'admin',
     label: 'Dashboard',
     icon: LayoutDashboard
   },
   {
     id: 'students',
+    slug:'',
     label: 'Students',
     icon: GraduationCap
   },
   {
     id: 'teachers',
+    slug:'',
     label: 'Teachers',
     icon: Users
   },
   {
     id: 'subjects',
+    slug:'',
     label: 'Subjects',
     icon: BookOpen
   },
   {
     id: 'attendance',
+    slug:'',
     label: 'Attendance',
     icon: ClipboardCheck
   },
   {
     id: 'timetable',
+    slug:'',
     label: 'Timetable',
     icon: Calendar
   },
   {
     id: 'circulars',
+    slug:'',
     label: 'Circulars',
     icon: FileText
   },
   {
     id: 'settings',
+    slug:'',
     label: 'Settings',
     icon: Settings
   }
@@ -118,16 +126,19 @@ export const Sidebar = () => {
               key={item.id}
               variant={isActive ? 'default' : 'ghost'}
               className={cn(
-                'w-full justify-start h-10 transition-all duration-200',
-                isCollapsed && 'justify-center px-2',
-                isActive &&
-                  'bg-gradient-primary text-primary-foreground shadow-soft'
+              'w-full justify-start h-10 transition-all duration-200',
+              isCollapsed && 'justify-center px-2',
+              isActive &&
+                'bg-gradient-primary text-primary-foreground shadow-soft'
               )}
-              onClick={() => setActiveView(item.id)}
+              onClick={() => {
+              setActiveView(item.id);
+              window.location.href = item.slug ? `/${item.slug}/${item.id}` : `/${item.id}`;
+              }}
             >
               <Icon className={cn('h-4 w-4', !isCollapsed && 'mr-3')} />
               {!isCollapsed && (
-                <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-sm font-medium">{item.label}</span>
               )}
             </Button>
           );

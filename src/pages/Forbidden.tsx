@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
-export const Forbidden = () => {
+const Forbidden = () => {
   const navigate = useNavigate();
 
   return (
@@ -12,7 +12,7 @@ export const Forbidden = () => {
           You don't have permission to access this page.
         </p>
         <div className="space-x-4">
-          <Button onClick={() => navigate('/dashboard')}>
+          <Button onClick={() => navigate('/admin/dashboard')}>
             Go to Dashboard
           </Button>
           <Button variant="outline" onClick={() => navigate(-1)}>
@@ -23,3 +23,5 @@ export const Forbidden = () => {
     </div>
   );
 };
+
+export default Forbidden;

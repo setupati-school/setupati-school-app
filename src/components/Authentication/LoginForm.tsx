@@ -82,7 +82,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         variant: 'default'
       });
 
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } catch (error: unknown) {
       let errorMessage = '';
       if ((error as { code: string }).code === 'auth/invalid-credential') {

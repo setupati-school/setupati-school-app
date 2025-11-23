@@ -3,7 +3,7 @@ import { LandingPageNavigation } from '@/components/ui/LandingPageNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Users, Award, BookOpen } from 'lucide-react';
 
-export const Gallery: React.FC = () => {
+const Gallery: React.FC = () => {
   const galleryItems = [
     {
       id: 1,
@@ -165,3 +165,5 @@ export const Gallery: React.FC = () => {
     </div>
   );
 };
+
+export default Gallery;
