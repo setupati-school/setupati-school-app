@@ -1,6 +1,6 @@
 import { db } from '../../firebase.js';
 import type examResult from '@setupati-school/setupati-types/models';
-import { AppError, HttpCode } from '../../error.js';
+import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
 import { mapDocsWithKey } from '../../utils/helper.js';
 type ExamResult = typeof examResult;

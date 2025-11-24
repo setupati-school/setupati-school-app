@@ -2,7 +2,7 @@ import React, { useState, memo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AxiosError } from 'axios';
+import axios from 'axios';
 import {
   setPersistence,
   browserLocalPersistence,
@@ -23,6 +23,7 @@ import {
 import { Eye, EyeOff, Mail, Lock, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { useNavigate } from 'react-router-dom';
 import { useSchoolStore } from '@/store/schoolStore';
 import api from '@/lib/axiosConfig';
@@ -95,13 +96,37 @@ const LoginFormComponent: React.FC<LoginFormProps> = ({
     } catch (error: unknown) {
       let errorMessage = 'Failed to login. Please try again.';
 
-      const err = error as any;
-
-      if (err?.code === 'auth/invalid-credential') {
-        errorMessage = 'Incorrect password or email address.';
-      } else if ((error as AxiosError)?.response?.data) {
-        const data: any = (error as AxiosError).response?.data;
-        if (data?.error) errorMessage = data.error;
+      if (axios.isAxiosError(error)) {
+        const resp = error.response;
+        if (resp?.data) {
+          const data = resp.data as Record<string, unknown> | string;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (data && typeof data === 'object') {
+            const dataObj = data as Record<string, unknown>;
+            if ('error' in dataObj && typeof dataObj.error === 'string') {
+              errorMessage = dataObj.error;
+            } else if (
+              'message' in dataObj &&
+              typeof dataObj.message === 'string'
+            ) {
+              errorMessage = dataObj.message;
+            } else {
+              errorMessage = JSON.stringify(dataObj);
+            }
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const parsedError = firebaseErrorParser(
+          error as Record<string, unknown> & {
+            code: string;
+            message: string;
+            httpCode?: number;
+          }
+        );
+        errorMessage = parsedError.message;
       } else if (error instanceof Error && error.message) {
         errorMessage = error.message;
       }

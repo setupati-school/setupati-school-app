@@ -3,7 +3,7 @@ import React, { memo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { Mail, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { BACKEND_URL } from '@/lib/utils';
 import { forgotPasswordSchema } from '@/components/zod';
 
@@ -64,9 +65,41 @@ const ForgotPasswordFormComponent: React.FC<ForgotPasswordFormProps> = ({
       let errorMessage =
         'No user found with this email or failed to send reset email.';
 
-      const axiosError = error as AxiosError<any>;
-      if (axiosError?.response?.data?.error) {
-        errorMessage = axiosError.response.data.error;
+      // Prefer Axios errors (backend responses) first
+      if (axios.isAxiosError(error)) {
+        const resp = error.response;
+        if (resp?.data) {
+          // backend returns { error: string } or { message: string }
+          const data = resp.data as Record<string, unknown> | string;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (data && typeof data === 'object') {
+            const dataObj = data as Record<string, unknown>;
+            if ('error' in dataObj && typeof dataObj.error === 'string') {
+              errorMessage = dataObj.error;
+            } else if (
+              'message' in dataObj &&
+              typeof dataObj.message === 'string'
+            ) {
+              errorMessage = dataObj.message;
+            } else {
+              errorMessage = JSON.stringify(dataObj);
+            }
+          }
+        } else {
+          // no response (network error)
+          errorMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        // Firebase client-side error
+        const parsedError = firebaseErrorParser(
+          error as Record<string, unknown> & {
+            code: string;
+            message: string;
+            httpCode?: number;
+          }
+        );
+        errorMessage = parsedError.message;
       } else if (error instanceof Error && error.message) {
         errorMessage = error.message;
       }

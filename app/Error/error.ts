@@ -9,7 +9,8 @@ export class AppError extends Error {
   public readonly httpCode: HttpCode;
   public readonly isOperational: boolean;
   constructor(message: string, httpCode: HttpCode, isOperational = true) {
-    super(message);
+    super();
+    this.message = message;
     this.httpCode = httpCode;
     this.isOperational = isOperational;
     Object.setPrototypeOf(this, new.target.prototype);

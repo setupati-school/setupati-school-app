@@ -1,7 +1,8 @@
 import { db, auth } from '../../firebase.js';
 import { User } from '../../models/User.js';
-import { AppError, HttpCode } from '../../error.js';
+import { AppError, HttpCode } from '../../Error/error.js';
 import type { Student, Parent, Teacher } from '@setupati-school/setupati-types';
+import logger from '../../utils/logger.js';
 
 if (!db || !auth)
   throw new AppError(
@@ -40,18 +41,21 @@ export const createStudentAndParent = async (
     updated_at: nowIso()
   };
 
+  const parentRef = parentCollection.doc();
+  const parentId = parentRef.id;
+
   const studentDoc = {
     id: uid,
     ...student,
+    parent_id: parentId,
     created_at: nowIso(),
     updated_at: nowIso()
   };
 
   const parentDoc = {
-    id: uid,
-    first_name: parent.first_name,
-    last_name: parent.last_name,
+    id: parentId,
     ...parent,
+    student_id: [uid],
     created_at: nowIso(),
     updated_at: nowIso()
   };
@@ -59,13 +63,24 @@ export const createStudentAndParent = async (
   const batch = db!.batch();
   const userRef = userCollection.doc(uid);
   const studentRef = studentCollection.doc(uid);
-  const parentRef = parentCollection.doc(uid);
 
   batch.set(userRef, userDoc);
   batch.set(studentRef, studentDoc);
   batch.set(parentRef, parentDoc);
 
-  await batch.commit();
+  try {
+    await batch.commit();
+  } catch (err) {
+    try {
+      await auth!.deleteUser(uid);
+    } catch (delErr) {
+      logger.error(
+        'Failed to delete auth user after Firestore commit failure.',
+        delErr
+      );
+    }
+    throw err;
+  }
 
   return { uid, userDoc, studentDoc, parentDoc };
 };
@@ -100,11 +115,22 @@ export const createTeacher = async (teacher: Teacher, password: string) => {
   const batch = db!.batch();
   const userRef = userCollection.doc(uid);
   const teacherRef = teacherCollection.doc(uid);
-
   batch.set(userRef, userDoc);
   batch.set(teacherRef, teacherDoc);
 
-  await batch.commit();
+  try {
+    await batch.commit();
+  } catch (err) {
+    try {
+      await auth!.deleteUser(uid);
+    } catch (delErr) {
+      logger.error(
+        'Failed to delete auth user after Firestore commit failure',
+        delErr
+      );
+    }
+    throw err;
+  }
 
   return { uid, userDoc, teacherDoc };
 };

@@ -17,8 +17,10 @@ import {
 } from '@/components/ui/card';
 import { Mail, EyeOff, Eye, CheckCircle, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 import { verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { resetPasswordSchema } from '@/components/zod';
 
 interface ResetPasswordProps {
@@ -69,11 +71,40 @@ const ResetPasswordComponent: React.FC<ResetPasswordProps> = ({
       try {
         const emailFromCode = await verifyPasswordResetCode(auth, oobCode);
         setEmail(emailFromCode);
-      } catch (error: any) {
+      } catch (error: unknown) {
         let errorMessage = 'Invalid or expired password reset link.';
 
-        if (error?.code === 'auth/expired-action-code') {
-          errorMessage = 'Password reset link has expired.';
+        if (axios.isAxiosError(error)) {
+          const resp = error.response;
+          if (resp?.data) {
+            const data = resp.data as Record<string, unknown> | string;
+            if (typeof data === 'string') {
+              errorMessage = data;
+            } else if (data && typeof data === 'object') {
+              const dataObj = data as Record<string, unknown>;
+              if ('error' in dataObj && typeof dataObj.error === 'string') {
+                errorMessage = dataObj.error;
+              } else if (
+                'message' in dataObj &&
+                typeof dataObj.message === 'string'
+              ) {
+                errorMessage = dataObj.message;
+              } else {
+                errorMessage = JSON.stringify(dataObj);
+              }
+            }
+          } else {
+            errorMessage = error.message;
+          }
+        } else if (error && typeof error === 'object' && 'code' in error) {
+          const parsedError = firebaseErrorParser(
+            error as Record<string, unknown> & {
+              code: string;
+              message: string;
+              httpCode?: number;
+            }
+          );
+          errorMessage = parsedError.message;
         } else if (error instanceof Error && error.message) {
           errorMessage = error.message;
         }
@@ -113,10 +144,41 @@ const ResetPasswordComponent: React.FC<ResetPasswordProps> = ({
 
       reset();
       toggleCurrentView('login');
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'Failed to reset your password.';
 
-      if (error instanceof Error && error.message) {
+      if (axios.isAxiosError(error)) {
+        const resp = error.response;
+        if (resp?.data) {
+          const data = resp.data as Record<string, unknown> | string;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (data && typeof data === 'object') {
+            const dataObj = data as Record<string, unknown>;
+            if ('error' in dataObj && typeof dataObj.error === 'string') {
+              errorMessage = dataObj.error;
+            } else if (
+              'message' in dataObj &&
+              typeof dataObj.message === 'string'
+            ) {
+              errorMessage = dataObj.message;
+            } else {
+              errorMessage = JSON.stringify(dataObj);
+            }
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const parsedError = firebaseErrorParser(
+          error as Record<string, unknown> & {
+            code: string;
+            message: string;
+            httpCode?: number;
+          }
+        );
+        errorMessage = parsedError.message;
+      } else if (error instanceof Error && error.message) {
         errorMessage = error.message;
       }
 

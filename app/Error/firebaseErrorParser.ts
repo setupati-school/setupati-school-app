@@ -1,10 +1,10 @@
 import { AppError } from '@setupati-school/setupati-types';
 
-export const firebaseErrorPraser = (
+export const firebaseErrorParser = (
   error: AppError
 ): { httpCode: number; message: string } => {
-  let httpCode = 500;
-  let message = 'An unexpected error occurred. Please try again.';
+  let httpCode = error?.httpCode || 500;
+  let message = error.message;
 
   switch (error.code) {
     case 'auth/email-already-exists':
@@ -52,7 +52,7 @@ export const firebaseErrorPraser = (
       break;
     case 'auth/user-not-found':
       httpCode = 404;
-      message = 'No user found with the provided user ID.';
+      message = 'No user found with the provided email or user ID.';
       break;
     case 'permission-denied':
       httpCode = 403;
