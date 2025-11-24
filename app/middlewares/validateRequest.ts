@@ -26,7 +26,7 @@ export function validateBody(schema: ZodTypeAny): RequestHandler {
         const { issues, combinedMessage } = formatZodError(err);
 
         return res.status(400).json({
-          error: combinedMessage, 
+          error: combinedMessage,
           issues
         });
       }

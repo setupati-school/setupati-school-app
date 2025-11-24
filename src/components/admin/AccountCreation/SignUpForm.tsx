@@ -1,10 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  useForm,
-  Controller,
-  SubmitHandler,
-  FieldErrors
-} from 'react-hook-form';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Country, State, City } from 'country-state-city';
@@ -38,6 +33,20 @@ const formatAadhaar = (value: string): string => {
     parts.push(digits.slice(i, i + 4));
   }
   return parts.join('-');
+};
+
+const applyBackendIssuesToForm = (
+  issues: Array<{ path?: string; message?: string }> | undefined,
+  setError: (name: any, error: { type: string; message: string }) => void
+) => {
+  if (!Array.isArray(issues)) return;
+  issues.forEach((issue) => {
+    if (!issue?.path) return;
+    setError(issue.path as any, {
+      type: 'server',
+      message: issue.message || 'Invalid value'
+    });
+  });
 };
 
 const SignUpFormInner: React.FC = () => {
@@ -112,6 +121,7 @@ const SignUpFormInner: React.FC = () => {
     if (studentCountryCode) {
       return City.getCitiesOfCountry(studentCountryCode);
     }
+
     return [] as ReturnType<typeof City.getCitiesOfState>;
   }, [studentCountryCode, studentStateCode]);
 
@@ -175,23 +185,9 @@ const SignUpFormInner: React.FC = () => {
     simulateUpload(type);
   };
 
-  const applyBackendIssuesToForm = (
-    issues: Array<{ path?: string; message?: string }> | undefined,
-    setError: (name: any, error: { type: string; message: string }) => void
-  ) => {
-    if (!Array.isArray(issues)) return;
-    issues.forEach((issue) => {
-      if (!issue?.path) return;
-      setError(issue.path as any, {
-        type: 'server',
-        message: issue.message || 'Invalid value'
-      });
-    });
-  };
-
   // =============== STUDENT SUBMIT ===============
   const onSubmitStudent: SubmitHandler<StudentForm> = async (data) => {
-    if (studentLoading || studentForm.formState.isSubmitting) return;
+    if (studentLoading) return;
     setStudentLoading(true);
     try {
       const payload = {
@@ -215,11 +211,15 @@ const SignUpFormInner: React.FC = () => {
       setStudentCityKey('');
 
       return res.data;
-    } catch (err: any) {
-      const backendError = err?.response?.data;
+    } catch (err) {
+      const backendError = (err as any)?.response?.data;
       const msg =
-        backendError?.error || err?.message || 'Failed to create student';
+        backendError?.error ||
+        (err as any)?.message ||
+        'Failed to create student';
+
       applyBackendIssuesToForm(backendError?.issues, studentForm.setError);
+
       studentForm.setError('root' as any, {
         type: 'server',
         message: msg
@@ -231,7 +231,7 @@ const SignUpFormInner: React.FC = () => {
     }
   };
 
-  const onInvalidStudent = (errors: FieldErrors<StudentForm>) => {
+  const onInvalidStudent = () => {
     studentForm.setError('root' as any, {
       type: 'validation',
       message: 'Please fill all required fields correctly before submitting.'
@@ -245,7 +245,7 @@ const SignUpFormInner: React.FC = () => {
 
   // =============== TEACHER SUBMIT ===============
   const onSubmitTeacher: SubmitHandler<TeacherForm> = async (data) => {
-    if (teacherLoading || teacherForm.formState.isSubmitting) return;
+    if (teacherLoading) return;
     setTeacherLoading(true);
     try {
       const payload = {
@@ -267,10 +267,12 @@ const SignUpFormInner: React.FC = () => {
       teacherForm.clearErrors('root' as any);
 
       return res.data;
-    } catch (err: any) {
-      const backendError = err?.response?.data;
+    } catch (err) {
+      const backendError = (err as any)?.response?.data;
       const msg =
-        backendError?.error || err?.message || 'Failed to create teacher';
+        backendError?.error ||
+        (err as any)?.message ||
+        'Failed to create teacher';
 
       applyBackendIssuesToForm(backendError?.issues, teacherForm.setError);
 
@@ -285,7 +287,7 @@ const SignUpFormInner: React.FC = () => {
     }
   };
 
-  const onInvalidTeacher = (errors: FieldErrors<TeacherForm>) => {
+  const onInvalidTeacher = () => {
     teacherForm.setError('root' as any, {
       type: 'validation',
       message: 'Please fill all required fields correctly before submitting.'
@@ -296,9 +298,14 @@ const SignUpFormInner: React.FC = () => {
       variant: 'destructive'
     });
   };
+
   return (
     <div className="w-full max-w-4xl mx-auto h-auto overflow-visible">
-      <Tabs value={tab} onValueChange={(v) => setTab(v)} className="w-full">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as 'student' | 'teacher')}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="student" className="flex items-center gap-2">
             <Users className="h-4 w-4" /> Student & Parent
@@ -308,7 +315,7 @@ const SignUpFormInner: React.FC = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* ------------- STUDENT TAB (only mounted when active) ------------- */}
+        {/* ------------- STUDENT TAB ------------- */}
         {tab === 'student' && (
           <TabsContent value="student" className="space-y-4 mt-4">
             {/* Bulk upload */}
@@ -357,6 +364,7 @@ const SignUpFormInner: React.FC = () => {
                   onInvalidStudent
                 )}
                 className="space-y-6"
+                noValidate
               >
                 {/* Root error */}
                 {studentForm.formState.errors.root && (
@@ -902,7 +910,7 @@ const SignUpFormInner: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-2 top-2"
+                        className="absolute right-2 top-1/2 -translate-y-[30%]"
                         onClick={() => setShowStudentPassword((s) => !s)}
                       >
                         {showStudentPassword ? (
@@ -930,7 +938,7 @@ const SignUpFormInner: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-2 top-2"
+                        className="absolute right-2 top-1/2 -translate-y-[30%]"
                         onClick={() => setShowStudentConfirm((s) => !s)}
                       >
                         {showStudentConfirm ? (
@@ -966,7 +974,7 @@ const SignUpFormInner: React.FC = () => {
           </TabsContent>
         )}
 
-        {/* ------------- TEACHER TAB (only mounted when active) ------------- */}
+        {/* ------------- TEACHER TAB ------------- */}
         {tab === 'teacher' && (
           <TabsContent value="teacher" className="space-y-4 mt-4">
             {/* Bulk upload */}
@@ -1015,6 +1023,7 @@ const SignUpFormInner: React.FC = () => {
                   onInvalidTeacher
                 )}
                 className="space-y-6"
+                noValidate
               >
                 {teacherForm.formState.errors.root && (
                   <div className="rounded-md bg-destructive/10 border border-destructive px-3 py-2 text-sm text-destructive text-center">
@@ -1201,7 +1210,7 @@ const SignUpFormInner: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-2 top-2"
+                        className="absolute right-2 top-1/2 -translate-y-[30%]"
                         onClick={() => setShowTeacherPassword((s) => !s)}
                       >
                         {showTeacherPassword ? (
@@ -1228,7 +1237,7 @@ const SignUpFormInner: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-2 top-2"
+                        className="absolute right-2 top-1/2 -translate-y-[30%]"
                         onClick={() => setShowTeacherConfirm((s) => !s)}
                       >
                         {showTeacherConfirm ? (
@@ -1269,3 +1278,4 @@ const SignUpFormInner: React.FC = () => {
 };
 
 export const SignUpForm = React.memo(SignUpFormInner);
+export default SignUpForm;
