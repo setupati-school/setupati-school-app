@@ -2,9 +2,14 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GraduationCap, Images, LogIn } from 'lucide-react';
+import i18n from '../../../i18n';
+import { useSchoolStore } from '../../store/schoolStore';
+import { useTranslation } from 'react-i18next';
 
 export const LandingPageNavigation: React.FC = () => {
   const location = useLocation();
+  const { t } = useTranslation();
+  i18n.language = useSchoolStore(state => state.currentLanguage);
 
   return (
     <nav className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
@@ -13,7 +18,7 @@ export const LandingPageNavigation: React.FC = () => {
           <Link to="/" className="flex items-center space-x-2">
             <GraduationCap className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold text-primary">
-              Setupati School
+              {t('title')} School
             </span>
           </Link>
 

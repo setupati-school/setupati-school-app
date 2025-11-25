@@ -8,7 +8,7 @@ import {
 import { useSchoolStore } from "@/store/schoolStore";
 import { Languages, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useRef } from "react";
+import i18n from "../../../i18n";
 
 const languages = [
   { code: "en", name: "English", flag: "🇬🇧" },
@@ -42,7 +42,7 @@ export const LanguageSwitcher = () => {
         {languages.map((language) => (
           <DropdownMenuItem
             key={language.code}
-            onClick={() => {changeGoogleLanguage(language.code); setCurrentLanguage(language.code)}}
+            onClick={() => {changeGoogleLanguage(language.code); setCurrentLanguage(language.code); i18n.changeLanguage(language.code);}}
             className={cn(
               "cursor-pointer",
               currentLanguage === language.code && "bg-accent"

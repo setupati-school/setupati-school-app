@@ -4,6 +4,9 @@ import { LoginForm } from './LoginForm';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { ResetPassword } from './ResetPassword';
 import { useAuthStore } from '@/store/authStore';
+import i18n from '../../../i18n';
+import { useSchoolStore } from '../../store/schoolStore';
+import { useTranslation } from 'react-i18next';
 
 export interface FormDataType {
   email: string;
@@ -28,6 +31,8 @@ export const AuthLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { t } = useTranslation();
+  i18n.language = useSchoolStore(state => state.currentLanguage);
 
   useEffect(() => {
     if (location.pathname.includes('reset-password')) {
@@ -68,7 +73,7 @@ export const AuthLayout: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">
-            Setupati School Login
+            {t('title')} School Login
           </h1>
           <p className="text-muted-foreground">
             Empowering Education Through Technology
