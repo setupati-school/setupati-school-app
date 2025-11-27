@@ -10,18 +10,42 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { Edit, Eye } from 'lucide-react';
-import { Student } from '@/models/Student';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Student } from '@/types/schoolStoreType';
+import { useSchoolStore } from '@/store/schoolStore';
 
 interface StudentListProps {
   students: Student[];
   searchTerm: string;
+  onView: (student: Student) => void;
+  onEdit: (student: Student) => void;
+  onDelete: (student: Student) => void;
 }
 
-export const StudentList = ({ students, searchTerm }: StudentListProps) => {
+export const StudentList = ({
+  students,
+  searchTerm,
+  onView,
+  onEdit,
+  onDelete
+}: StudentListProps) => {
+  const { sections } = useSchoolStore();
+
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName[0]}${lastName[0]}`.toUpperCase();
   };
+
+  const getSectionName = (sectionId: string) => {
+    const section = sections.find((s) => s.id === sectionId);
+    return section?.section_name || sectionId;
+  };
+
   return (
     <div className="space-y-6">
       {/* Students Table */}
@@ -73,7 +97,7 @@ export const StudentList = ({ students, searchTerm }: StudentListProps) => {
                     </TableCell>
                     <TableCell>
                       <Badge className="bg-accent text-accent-foreground">
-                        {student.section_id}
+                        {getSectionName(student.section_id)}
                       </Badge>
                     </TableCell>
                     <TableCell>{student.gender}</TableCell>
@@ -95,12 +119,46 @@ export const StudentList = ({ students, searchTerm }: StudentListProps) => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onView(student)}
+                          title="View details"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit(student)}
+                          title="Edit student"
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onView(student)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEdit(student)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onDelete(student)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>

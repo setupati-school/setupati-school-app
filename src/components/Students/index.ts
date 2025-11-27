@@ -1,0 +1,11 @@
+export { StudentsPage } from './StudentsPage';
+export { StudentList } from './StudentsList';
+export { AddStudentDialog } from './AddStudentDialog';
+export { EditStudentDialog } from './EditStudentDialog';
+export { ViewStudentDialog } from './ViewStudentDialog';
+export { DeleteStudentDialog } from './DeleteStudentDialog';
+export { StudentDashboard } from './StudentDashboard';
+export { StudentAttendance } from './StudentAttendance';
+export { StudentTimetable } from './StudentTimetable';
+export { StudentExamResults } from './StudentExamResults';
+export { StatsCard } from './StatsCard';
