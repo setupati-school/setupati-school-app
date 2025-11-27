@@ -14,6 +14,8 @@ import { LandingPage } from '@/pages/LandingPage';
 import { Gallery } from '@/pages/Gallery';
 import { useAuthStore } from '@/store/authStore';
 import { useSchoolStore } from '@/store/schoolStore';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../i18n';
 
 const queryClient = new QueryClient();
 
@@ -71,11 +73,13 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <SonnerToaster />
-        <RouterProvider router={router} />
-      </TooltipProvider>
+      <I18nextProvider i18n={i18n}>
+        <TooltipProvider>
+          <Toaster />
+          <SonnerToaster />
+          <RouterProvider router={router} />
+        </TooltipProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 };

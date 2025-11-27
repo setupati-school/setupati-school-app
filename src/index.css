@@ -5,6 +5,17 @@
 All colors MUST be HSL.
 */
 
+
+body {
+  top: 0 !important;
+  position: relative;
+}
+
+body .skiptranslate {
+  display: none;
+}
+
+
 @layer base {
   :root {
     color-scheme: light;
