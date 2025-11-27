@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import {
+  useForm,
+  Controller,
+  SubmitHandler,
+  FieldPath,
+  FieldValues,
+  UseFormSetError
+} from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Country, State, City } from 'country-state-city';
@@ -23,6 +30,7 @@ import api from '@/lib/axiosConfig';
 
 type StudentForm = z.infer<typeof studentSchema>;
 type TeacherForm = z.infer<typeof teacherSchema>;
+type BackendIssue = { path?: string; message?: string };
 
 const ALL_COUNTRIES = Country.getAllCountries();
 
@@ -35,14 +43,14 @@ const formatAadhaar = (value: string): string => {
   return parts.join('-');
 };
 
-const applyBackendIssuesToForm = (
+const applyBackendIssuesToForm = <TFieldValues extends FieldValues>(
   issues: Array<{ path?: string; message?: string }> | undefined,
-  setError: (name: any, error: { type: string; message: string }) => void
+  setError: UseFormSetError<TFieldValues>
 ) => {
   if (!Array.isArray(issues)) return;
   issues.forEach((issue) => {
     if (!issue?.path) return;
-    setError(issue.path as any, {
+    setError(issue.path as unknown as FieldPath<TFieldValues>, {
       type: 'server',
       message: issue.message || 'Invalid value'
     });
@@ -204,23 +212,29 @@ const SignUpFormInner: React.FC = () => {
       });
 
       studentForm.reset();
-      studentForm.clearErrors('root' as any);
+      // Clear all errors (including any root/form-level errors)
+      studentForm.clearErrors();
       setStudentCountryCode('');
       setStudentStateCode('');
       setStudentStateKey('');
       setStudentCityKey('');
 
       return res.data;
-    } catch (err) {
-      const backendError = (err as any)?.response?.data;
+    } catch (err: unknown) {
+      const backendError = (err as { response?: { data?: unknown } })?.response
+        ?.data as Record<string, unknown> | undefined;
+
       const msg =
-        backendError?.error ||
-        (err as any)?.message ||
-        'Failed to create student';
+        (backendError && (backendError.error as string)) ||
+        (err instanceof Error ? err.message : 'Failed to create student');
 
-      applyBackendIssuesToForm(backendError?.issues, studentForm.setError);
+      const studentIssues = backendError?.issues as BackendIssue[] | undefined;
+      applyBackendIssuesToForm<StudentForm>(
+        studentIssues,
+        studentForm.setError
+      );
 
-      studentForm.setError('root' as any, {
+      studentForm.setError('root' as unknown as FieldPath<StudentForm>, {
         type: 'server',
         message: msg
       });
@@ -232,7 +246,7 @@ const SignUpFormInner: React.FC = () => {
   };
 
   const onInvalidStudent = () => {
-    studentForm.setError('root' as any, {
+    studentForm.setError('root' as unknown as FieldPath<StudentForm>, {
       type: 'validation',
       message: 'Please fill all required fields correctly before submitting.'
     });
@@ -264,19 +278,24 @@ const SignUpFormInner: React.FC = () => {
       });
 
       teacherForm.reset();
-      teacherForm.clearErrors('root' as any);
+      teacherForm.clearErrors();
 
       return res.data;
-    } catch (err) {
-      const backendError = (err as any)?.response?.data;
+    } catch (err: unknown) {
+      const backendError = (err as { response?: { data?: unknown } })?.response
+        ?.data as Record<string, unknown> | undefined;
+
       const msg =
-        backendError?.error ||
-        (err as any)?.message ||
-        'Failed to create teacher';
+        (backendError && (backendError.error as string)) ||
+        (err instanceof Error ? err.message : 'Failed to create teacher');
 
-      applyBackendIssuesToForm(backendError?.issues, teacherForm.setError);
+      const teacherIssues = backendError?.issues as BackendIssue[] | undefined;
+      applyBackendIssuesToForm<TeacherForm>(
+        teacherIssues,
+        teacherForm.setError
+      );
 
-      teacherForm.setError('root' as any, {
+      teacherForm.setError('root' as unknown as FieldPath<TeacherForm>, {
         type: 'server',
         message: msg
       });
@@ -288,7 +307,7 @@ const SignUpFormInner: React.FC = () => {
   };
 
   const onInvalidTeacher = () => {
-    teacherForm.setError('root' as any, {
+    teacherForm.setError('root' as unknown as FieldPath<TeacherForm>, {
       type: 'validation',
       message: 'Please fill all required fields correctly before submitting.'
     });
@@ -303,7 +322,7 @@ const SignUpFormInner: React.FC = () => {
     <div className="w-full max-w-4xl mx-auto h-auto overflow-visible">
       <Tabs
         value={tab}
-        onValueChange={(v) => setTab(v as 'student' | 'teacher')}
+        onValueChange={(v: string) => setTab(v as 'student' | 'teacher')}
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-2">
@@ -327,7 +346,9 @@ const SignUpFormInner: React.FC = () => {
                 <Input
                   type="file"
                   accept=".xlsx,.xls"
-                  onChange={(e) => handleFile(e, 'Student')}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleFile(e, 'Student')
+                  }
                   className="flex-1"
                   disabled={isUploading}
                 />
@@ -468,7 +489,7 @@ const SignUpFormInner: React.FC = () => {
                         name="student.gender"
                         render={({ field }) => (
                           <Select
-                            onValueChange={(v) =>
+                            onValueChange={(v: string) =>
                               field.onChange(v as 'Male' | 'Female' | 'Other')
                             }
                             value={field.value ?? ''}
@@ -519,7 +540,9 @@ const SignUpFormInner: React.FC = () => {
                             maxLength={14}
                             placeholder="1234-5678-9012"
                             value={formatAadhaar(field.value ?? '')}
-                            onChange={(e) => {
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
                               const digitsOnly = e.target.value
                                 .replace(/\D/g, '')
                                 .slice(0, 12);
@@ -581,7 +604,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>City *</Label>
                       <Select
                         value={studentCityKey}
-                        onValueChange={(val) => {
+                        onValueChange={(val: string) => {
                           setStudentCityKey(val);
                           const [countryCode, stateCode, cityName] =
                             val.split('|');
@@ -622,7 +645,7 @@ const SignUpFormInner: React.FC = () => {
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {studentCityOptions.map((city) => (
+                          {studentCityOptions?.map((city) => (
                             <SelectItem
                               key={`${city.countryCode}-${city.stateCode}-${city.name}`}
                               value={`${city.countryCode}|${city.stateCode}|${city.name}`}
@@ -646,7 +669,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>State *</Label>
                       <Select
                         value={studentStateKey}
-                        onValueChange={(val) => {
+                        onValueChange={(val: string) => {
                           setStudentStateKey(val);
                           const [countryCode, stateCode] = val.split('|');
 
@@ -702,7 +725,7 @@ const SignUpFormInner: React.FC = () => {
                       <Label>Country *</Label>
                       <Select
                         value={studentCountryCode}
-                        onValueChange={(iso) => {
+                        onValueChange={(iso: string) => {
                           setStudentCountryCode(iso);
                           setStudentStateCode('');
                           setStudentStateKey('');
@@ -806,7 +829,7 @@ const SignUpFormInner: React.FC = () => {
                         name="parent.gender"
                         render={({ field }) => (
                           <Select
-                            onValueChange={(v) =>
+                            onValueChange={(v: string) =>
                               field.onChange(v as 'Male' | 'Female' | 'Other')
                             }
                             value={field.value ?? ''}
@@ -835,7 +858,7 @@ const SignUpFormInner: React.FC = () => {
                         name="parent.relation"
                         render={({ field }) => (
                           <Select
-                            onValueChange={(v) =>
+                            onValueChange={(v: string) =>
                               field.onChange(
                                 v as 'Father' | 'Mother' | 'Guardian'
                               )
@@ -986,7 +1009,9 @@ const SignUpFormInner: React.FC = () => {
                 <Input
                   type="file"
                   accept=".xlsx,.xls"
-                  onChange={(e) => handleFile(e, 'Teacher')}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleFile(e, 'Teacher')
+                  }
                   className="flex-1"
                   disabled={isUploading}
                 />
@@ -1168,7 +1193,7 @@ const SignUpFormInner: React.FC = () => {
                         name="teacher.gender"
                         render={({ field }) => (
                           <Select
-                            onValueChange={(v) =>
+                            onValueChange={(v: string) =>
                               field.onChange(v as 'Male' | 'Female' | 'Other')
                             }
                             value={field.value ?? ''}

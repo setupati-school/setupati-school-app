@@ -1,12 +1,7 @@
 import './index.css';
 import React, { useEffect, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Navigate,
-  useLocation
-} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { Gallery, Forbidden, LandingPage, NotFound } from '@/pages';
 import { DashboardRoute } from '@/components/Dashboard';
