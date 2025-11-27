@@ -11,6 +11,9 @@ import {
   AdminNavigationItems
 } from './constants';
 
+import { useTranslation } from 'react-i18next';
+import i18n from '../../../i18n';
+
 const SidebarComponent: React.FC = () => {
   const { sidebarCollapsed, setSidebarCollapsed } = useSchoolStore();
   const { role } = useAuthStore();
@@ -33,6 +36,9 @@ const SidebarComponent: React.FC = () => {
 
   // On mobile, always keep sidebar collapsed
   const isCollapsed = isMobile ? true : sidebarCollapsed;
+
+  const { t } = useTranslation();
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
 
   const handleNavigate = useCallback(
     (to: string) => {
@@ -66,7 +72,9 @@ const SidebarComponent: React.FC = () => {
                 <School className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">Setupati</h1>
+                <h1 className="font-bold text-lg text-foreground">
+                  {t('title')}
+                </h1>
                 <p className="text-xs text-muted-foreground">
                   School Management
                 </p>

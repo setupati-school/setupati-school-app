@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
+import { LanguageSwitcher } from '@/components/Layout/LanguageSwitcher';
 
 const HeaderComponent: React.FC = () => {
   const { currentUser, resetStore } = useSchoolStore();
@@ -69,6 +70,7 @@ const HeaderComponent: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+          <LanguageSwitcher />
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />

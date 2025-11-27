@@ -2,6 +2,9 @@
 import React, { Suspense, useMemo, useCallback } from 'react';
 import { useMatch, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import i18n from '../../../i18n';
+import { useSchoolStore } from '../../store/schoolStore';
+import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const LoginForm = React.lazy(() =>
@@ -22,6 +25,8 @@ export const AuthLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { t } = useTranslation();
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
 
   const isForgot = useMatch('/auth/forgot-password');
   const isReset = useMatch('/auth/reset-password');
@@ -58,7 +63,7 @@ export const AuthLayout: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">
-            Setupati School Login
+            {t('title')} School Login
           </h1>
           <p className="text-muted-foreground">
             Empowering Education Through Technology

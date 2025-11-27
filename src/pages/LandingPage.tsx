@@ -4,9 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Award, Users, BookOpen, Star, Calendar, Target } from 'lucide-react';
-import { Footer } from '@/components/Layout';
+import { Footer } from '@/components/Layout/Footer';
+import i18n from '../../i18n';
+import { useSchoolStore } from '../store/schoolStore';
+import { useTranslation } from 'react-i18next';
 
 export const LandingPage: React.FC = () => {
+  const { t } = useTranslation();
+  i18n.language = useSchoolStore(state => state.currentLanguage);
   return (
     <div className="min-h-screen bg-gradient-background">
       <LandingPageNavigation />
@@ -15,7 +20,7 @@ export const LandingPage: React.FC = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary mb-6">
-            Welcome to Setupati School
+            Welcome to {t('title')} School
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Empowering minds, shaping futures. Excellence in education for over
@@ -42,7 +47,7 @@ export const LandingPage: React.FC = () => {
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-primary mb-4">
-              About Setupati School
+              About {t('title')} School
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Founded with a vision to provide quality education, we have been

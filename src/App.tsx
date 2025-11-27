@@ -8,6 +8,8 @@ import { DashboardRoute } from '@/components/Dashboard';
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../i18n';
 import {
   AuthLayout,
   ProtectedRoute,
@@ -165,19 +167,21 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <SonnerToaster />
-        <Suspense
-          fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <LoadingSpinner />
-            </div>
-          }
-        >
-          <RouterProvider router={router} />
-        </Suspense>
-      </TooltipProvider>
+      <I18nextProvider i18n={i18n}>
+        <TooltipProvider>
+          <Toaster />
+          <SonnerToaster />
+          <Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner />
+              </div>
+            }
+          >
+            <RouterProvider router={router} />
+          </Suspense>
+        </TooltipProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 };
