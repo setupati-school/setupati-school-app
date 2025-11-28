@@ -1,95 +1,141 @@
-import { AppError } from '@setupati-school/setupati-types';
+import type { AppError } from '@setupati-school/setupati-types/error';
 
 export const firebaseErrorParser = (
-  error: AppError
+  error: unknown
 ): { httpCode: number; message: string } => {
-  let httpCode = error?.httpCode || 500;
-  let message = error.message;
+  let code: string | undefined;
+  let httpCode: number | undefined;
+  let message: string | undefined;
 
-  switch (error.code) {
+  if (typeof error === 'object' && error !== null) {
+    const e = error as Partial<AppError> & {
+      code?: unknown;
+      message?: unknown;
+      httpCode?: unknown;
+    };
+
+    if (typeof e.code === 'string') {
+      code = e.code;
+    }
+    if (typeof e.message === 'string') {
+      message = e.message;
+    }
+    if (typeof e.httpCode === 'number') {
+      httpCode = e.httpCode;
+    }
+  }
+
+  let resolvedHttpCode = httpCode ?? 500;
+  let resolvedMessage = message ?? 'An unknown error occurred';
+
+  switch (code) {
     case 'auth/email-already-exists':
-      httpCode = 409;
-      message = 'The email address is already in use by another account.';
+      resolvedHttpCode = 409;
+      resolvedMessage =
+        'The email address is already in use by another account.';
       break;
+
     case 'auth/invalid-email':
-      httpCode = 400;
-      message = 'The email address is not valid.';
+      resolvedHttpCode = 400;
+      resolvedMessage = 'The email address is not valid.';
       break;
+
     case 'auth/invalid-password':
-      httpCode = 400;
-      message =
+      resolvedHttpCode = 400;
+      resolvedMessage =
         'The password is too weak or invalid. Please use a stronger password (at least 6 characters).';
       break;
+
     case 'auth/uid-already-exists':
-      httpCode = 409;
-      message = 'The provided user ID is already in use.';
+      resolvedHttpCode = 409;
+      resolvedMessage = 'The provided user ID is already in use.';
       break;
+
     case 'auth/phone-number-already-exists':
-      httpCode = 409;
-      message = 'The phone number is already in use by another account.';
+      resolvedHttpCode = 409;
+      resolvedMessage =
+        'The phone number is already in use by another account.';
       break;
+
     case 'auth/invalid-phone-number':
-      httpCode = 400;
-      message = 'The phone number is not valid.';
+      resolvedHttpCode = 400;
+      resolvedMessage = 'The phone number is not valid.';
       break;
+
     case 'auth/argument-error':
-      httpCode = 400;
-      message = 'Invalid arguments provided for user creation.';
+      resolvedHttpCode = 400;
+      resolvedMessage = 'Invalid arguments provided for user creation.';
       break;
+
     case 'auth/quota-exceeded':
-      httpCode = 429;
-      message = 'User creation quota exceeded. Please try again later.';
+      resolvedHttpCode = 429;
+      resolvedMessage = 'User creation quota exceeded. Please try again later.';
       break;
+
     case 'auth/claims-too-large':
-      httpCode = 400;
-      message =
+      resolvedHttpCode = 400;
+      resolvedMessage =
         'The custom claims payload is too large. Maximum size is 1000 bytes.';
       break;
+
     case 'auth/invalid-claims':
-      httpCode = 400;
-      message =
+      resolvedHttpCode = 400;
+      resolvedMessage =
         'The custom claims provided are invalid. Please ensure they are a plain object and do not contain reserved claims.';
       break;
+
     case 'auth/user-not-found':
-      httpCode = 404;
-      message = 'No user found with the provided email or user ID.';
+      resolvedHttpCode = 404;
+      resolvedMessage = 'No user found with the provided email or user ID.';
       break;
+
     case 'permission-denied':
-      httpCode = 403;
-      message = 'You do not have permission to perform this action.';
+      resolvedHttpCode = 403;
+      resolvedMessage = 'You do not have permission to perform this action.';
       break;
+
     case 'unavailable':
-      httpCode = 503;
-      message =
+      resolvedHttpCode = 503;
+      resolvedMessage =
         'Firestore service is temporarily unavailable. Please try again shortly.';
       break;
+
     case 'invalid-argument':
-      httpCode = 400;
-      message = 'The data provided for the profile is invalid.';
+      resolvedHttpCode = 400;
+      resolvedMessage = 'The data provided for the profile is invalid.';
       break;
+
     case 'resource-exhausted':
-      httpCode = 429;
-      message = 'Too many requests. Please try again later.';
+      resolvedHttpCode = 429;
+      resolvedMessage = 'Too many requests. Please try again later.';
       break;
+
     case 'cancelled':
     case 'deadline-exceeded':
-      httpCode = 504;
-      message = 'The operation timed out. Please try again.';
+      resolvedHttpCode = 504;
+      resolvedMessage = 'The operation timed out. Please try again.';
       break;
+
     case 'aborted':
-      httpCode = 409;
-      message =
+      resolvedHttpCode = 409;
+      resolvedMessage =
         'The operation was aborted due to a conflict. Please try again.';
       break;
+
     case 'auth/invalid-uid':
-      httpCode = 400;
-      message = 'The provided user ID is invalid.';
+      resolvedHttpCode = 400;
+      resolvedMessage = 'The provided user ID is invalid.';
       break;
+
     case 'auth/network-request-failed':
-      httpCode = 503;
-      message =
+      resolvedHttpCode = 503;
+      resolvedMessage =
         'A network error occurred. Please check your internet connection or try again.';
       break;
   }
-  return { httpCode, message } as AppError;
+
+  return {
+    httpCode: resolvedHttpCode,
+    message: resolvedMessage
+  };
 };

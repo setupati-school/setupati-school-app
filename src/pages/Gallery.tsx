@@ -2,14 +2,9 @@ import React from 'react';
 import { LandingPageNavigation } from '@/components/ui/LandingPageNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Users, Award, BookOpen } from 'lucide-react';
-import i18n from '../../i18n';
-import { useSchoolStore } from '../store/schoolStore';
-import { useTranslation } from 'react-i18next';
 import { Footer } from '@/components/Layout';
 
 export const Gallery: React.FC = () => {
-  const { t } = useTranslation();
-  i18n.language = useSchoolStore(state => state.currentLanguage);
   const galleryItems = [
     {
       id: 1,

@@ -1,7 +1,11 @@
 import { db, auth } from '../../firebase.js';
 import { User } from '../../models/User.js';
 import { AppError, HttpCode } from '../../Error/error.js';
-import type { Student, Parent, Teacher } from '@setupati-school/setupati-types';
+import type {
+  Student,
+  Parent,
+  Teacher
+} from '@setupati-school/setupati-types/models';
 import logger from '../../utils/logger.js';
 
 if (!db || !auth)
@@ -18,8 +22,8 @@ const teacherCollection = db.collection('teachers');
 const nowIso = () => new Date().toISOString();
 
 export const createStudentAndParent = async (
-  student: Student,
-  parent: Parent,
+  student: Partial<Student>,
+  parent: Partial<Parent>,
   password: string
 ) => {
   const userRecord = await auth!.createUser({
@@ -45,16 +49,16 @@ export const createStudentAndParent = async (
   const parentId = parentRef.id;
 
   const studentDoc = {
-    id: uid,
     ...student,
+    id: uid,
     parent_id: parentId,
     created_at: nowIso(),
     updated_at: nowIso()
   };
 
   const parentDoc = {
-    id: parentId,
     ...parent,
+    id: parentId,
     student_id: [uid],
     created_at: nowIso(),
     updated_at: nowIso()
@@ -85,7 +89,10 @@ export const createStudentAndParent = async (
   return { uid, userDoc, studentDoc, parentDoc };
 };
 
-export const createTeacher = async (teacher: Teacher, password: string) => {
+export const createTeacher = async (
+  teacher: Partial<Teacher>,
+  password: string
+) => {
   const userRecord = await auth!.createUser({
     email: teacher.email,
     password: password,
@@ -106,8 +113,8 @@ export const createTeacher = async (teacher: Teacher, password: string) => {
   };
 
   const teacherDoc = {
-    id: uid,
     ...teacher,
+    id: uid,
     created_at: nowIso(),
     updated_at: nowIso()
   };

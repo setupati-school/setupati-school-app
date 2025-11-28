@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 export const LandingPage: React.FC = () => {
   const { t } = useTranslation();
-  i18n.language = useSchoolStore(state => state.currentLanguage);
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
   return (
     <div className="min-h-screen bg-gradient-background">
       <LandingPageNavigation />

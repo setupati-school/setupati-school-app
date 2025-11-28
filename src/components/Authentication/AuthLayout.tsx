@@ -84,7 +84,8 @@ export const AuthLayout: React.FC = () => {
 
         <div className="text-center mt-8">
           <p className="text-xs text-muted-foreground">
-            © 2025 School ERP System. All rights reserved.
+            © 2025 {t('title')} School. All rights reserved. Empowering
+            Education Through Technology.
           </p>
         </div>
       </div>

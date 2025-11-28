@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 export const LandingPageNavigation: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
-  i18n.language = useSchoolStore(state => state.currentLanguage);
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
 
   return (
     <nav className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">

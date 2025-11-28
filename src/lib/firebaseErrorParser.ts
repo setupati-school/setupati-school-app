@@ -1,4 +1,4 @@
-import { AppError } from '@setupati-school/setupati-types';
+import { AppError } from '@setupati-school/setupati-types/error';
 
 export const firebaseErrorParser = (
   error: AppError
