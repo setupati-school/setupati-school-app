@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+// src/components/auth/ForgotPasswordForm.tsx
+import React, { memo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,38 +16,43 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Mail, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { BACKEND_URL } from '@/lib/utils';
-import { FormDataType } from './AuthLayout';
+import { forgotPasswordSchema } from '@/components/zod';
 
 interface ForgotPasswordFormProps {
   toggleCurrentView: (view: 'login' | 'forgot' | 'reset') => void;
-  formData: FormDataType;
-  handleInputChange: (field: string, value: string) => void;
 }
 
-export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
-  toggleCurrentView,
-  formData,
-  handleInputChange
+type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
+const ForgotPasswordFormComponent: React.FC<ForgotPasswordFormProps> = ({
+  toggleCurrentView
 }) => {
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError
+  } = useForm<ForgotPasswordValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
+    mode: 'onSubmit'
+  });
 
+  const onSubmit = async (values: ForgotPasswordValues) => {
     try {
       await axios.post(`${BACKEND_URL}/api/v1/auth/validateEmail`, {
-        email: formData.email
+        email: values.email
       });
 
-      await sendPasswordResetEmail(auth, formData.email);
+      await sendPasswordResetEmail(auth, values.email);
 
       setIsSubmitted(true);
 
@@ -50,13 +61,55 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
         description: 'Email validated and reset link sent to your email.',
         duration: 3000
       });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.response?.data?.error || error.message
-          : 'No User Found in this email ID or Failed to send reset email.';
+    } catch (error: unknown) {
+      let errorMessage =
+        'No user found with this email or failed to send reset email.';
+
+      // Prefer Axios errors (backend responses) first
+      if (axios.isAxiosError(error)) {
+        const resp = error.response;
+        if (resp?.data) {
+          // backend returns { error: string } or { message: string }
+          const data = resp.data as Record<string, unknown> | string;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (data && typeof data === 'object') {
+            const dataObj = data as Record<string, unknown>;
+            if ('error' in dataObj && typeof dataObj.error === 'string') {
+              errorMessage = dataObj.error;
+            } else if (
+              'message' in dataObj &&
+              typeof dataObj.message === 'string'
+            ) {
+              errorMessage = dataObj.message;
+            } else {
+              errorMessage = JSON.stringify(dataObj);
+            }
+          }
+        } else {
+          // no response (network error)
+          errorMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        // Firebase client-side error
+        const parsedError = firebaseErrorParser(
+          error as Record<string, unknown> & {
+            code: string;
+            message: string;
+            httpCode?: number;
+          }
+        );
+        errorMessage = parsedError.message;
+      } else if (error instanceof Error && error.message) {
+        errorMessage = error.message;
+      }
 
       setIsSubmitted(false);
+      setError('email', {
+        type: 'server',
+        message: errorMessage
+      });
+
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -64,7 +117,6 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
         duration: 3000
       });
     }
-    setIsLoading(false);
   };
 
   return (
@@ -83,7 +135,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label
               htmlFor="reset-email"
@@ -97,25 +149,27 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
                 id="reset-email"
                 type="email"
                 placeholder="Enter your email address"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
                 className="pl-10 border-border focus:ring-accent"
                 disabled={isSubmitted}
-                required
+                {...register('email')}
               />
             </div>
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
           </div>
+
           <Button
-            onClick={handleEmailSubmit}
+            type="submit"
             variant="login"
             size="lg"
-            disabled={isSubmitted || isLoading}
+            disabled={isSubmitted || isSubmitting}
             className="w-full"
           >
             {isSubmitted
               ? 'Link Sent! Check Your Email'
-              : isLoading
-                ? 'Validating......'
+              : isSubmitting
+                ? 'Validating...'
                 : 'Confirm Your Email Address'}
           </Button>
         </form>
@@ -133,3 +187,5 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
     </Card>
   );
 };
+
+export const ForgotPasswordForm = memo(ForgotPasswordFormComponent);

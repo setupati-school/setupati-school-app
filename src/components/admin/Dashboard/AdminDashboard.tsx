@@ -1,9 +1,11 @@
 import { StatsCard } from './StatsCard';
 import { useSchoolStore } from '@/store/schoolStore';
 import { Users, GraduationCap, ClipboardCheck, BookOpen } from 'lucide-react';
-import { RecentAnnouncements } from '../Dashboard/RecentAnnouncements';
-import { TodaySchedule } from '../Dashboard/TodaySchedule';
-import { QuickActions } from '../Dashboard/QuickActions';
+import {
+  TodaySchedule,
+  QuickActions,
+  RecentAnnouncements
+} from '@/components/Dashboard';
 
 export const AdminDashboard = () => {
   const {

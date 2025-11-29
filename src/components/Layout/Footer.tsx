@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 export const Footer: React.FC = () => {
   const { t } = useTranslation();
-  i18n.language = useSchoolStore(state => state.currentLanguage);
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
 
   return (
     <footer className="py-8 px-4 bg-primary text-primary-foreground">

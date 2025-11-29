@@ -1,68 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { LoginForm } from './LoginForm';
-import { ForgotPasswordForm } from './ForgotPasswordForm';
-import { ResetPassword } from './ResetPassword';
+// src/components/auth/AuthLayout.tsx
+import React, { Suspense, useMemo, useCallback } from 'react';
+import { useMatch, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import i18n from '../../../i18n';
 import { useSchoolStore } from '../../store/schoolStore';
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
-export interface FormDataType {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  showPassword: boolean;
-  showConfirmPassword: boolean;
-}
+const LoginForm = React.lazy(() =>
+  import('./LoginForm').then((m) => ({ default: m.LoginForm }))
+);
+const ForgotPasswordForm = React.lazy(() =>
+  import('./ForgotPasswordForm').then((m) => ({
+    default: m.ForgotPasswordForm
+  }))
+);
+const ResetPassword = React.lazy(() =>
+  import('./ResetPassword').then((m) => ({ default: m.ResetPassword }))
+);
+
+export type AuthView = 'login' | 'forgot' | 'reset';
 
 export const AuthLayout: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'login' | 'forgot' | 'reset'>(
-    'login'
-  );
-  const [formData, setFormData] = useState<FormDataType>({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    showPassword: false,
-    showConfirmPassword: false
-  });
-
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
-  i18n.language = useSchoolStore(state => state.currentLanguage);
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
 
-  useEffect(() => {
-    if (location.pathname.includes('reset-password')) {
-      setCurrentView('reset');
-    } else if (location.pathname.includes('forgot-password')) {
-      setCurrentView('forgot');
-    } else {
-      setCurrentView('login');
-    }
-  }, [location.pathname]);
+  const isForgot = useMatch('/auth/forgot-password');
+  const isReset = useMatch('/auth/reset-password');
 
-  const toggleCurrentView = (view: 'login' | 'forgot' | 'reset') => {
-    setCurrentView(view);
+  const currentView: AuthView = useMemo(() => {
+    if (isReset) return 'reset';
+    if (isForgot) return 'forgot';
+    return 'login';
+  }, [isForgot, isReset]);
 
-    if (view === 'login') navigate('/auth/login');
-    else if (view === 'forgot') navigate('/auth/forgot-password');
-    else if (view === 'reset') navigate('/auth/reset-password');
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleBooleanInputChange = (field: string, value: boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const displayFormData = (data: Partial<FormDataType>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  };
+  const toggleView = useCallback(
+    (view: AuthView) => {
+      switch (view) {
+        case 'login':
+          navigate('/auth/login', { replace: true });
+          break;
+        case 'forgot':
+          navigate('/auth/forgot-password', { replace: true });
+          break;
+        case 'reset':
+          navigate('/auth/reset-password', { replace: true });
+          break;
+      }
+    },
+    [navigate]
+  );
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" state={{ from: location }} replace />;
@@ -80,35 +70,22 @@ export const AuthLayout: React.FC = () => {
           </p>
         </div>
 
-        {/* Transition between different views */}
         <div className="transition-all duration-300 ease-in-out">
-          {currentView === 'login' ? (
-            <LoginForm
-              toggleCurrentView={toggleCurrentView}
-              formData={formData}
-              handleInputChange={handleInputChange}
-              handleBooleanInputChange={handleBooleanInputChange}
-            />
-          ) : currentView === 'forgot' ? (
-            <ForgotPasswordForm
-              toggleCurrentView={toggleCurrentView}
-              formData={formData}
-              handleInputChange={handleInputChange}
-            />
-          ) : (
-            <ResetPassword
-              toggleCurrentView={toggleCurrentView}
-              formData={formData}
-              displayFormData={displayFormData}
-              handleInputChange={handleInputChange}
-              handleBooleanInputChange={handleBooleanInputChange}
-            />
-          )}
+          <Suspense fallback={<LoadingSpinner />}>
+            {currentView === 'forgot' ? (
+              <ForgotPasswordForm toggleCurrentView={toggleView} />
+            ) : currentView === 'reset' ? (
+              <ResetPassword toggleCurrentView={toggleView} />
+            ) : (
+              <LoginForm toggleCurrentView={toggleView} />
+            )}
+          </Suspense>
         </div>
 
         <div className="text-center mt-8">
           <p className="text-xs text-muted-foreground">
-            © 2025 School ERP System. All rights reserved.
+            © 2025 {t('title')} School. All rights reserved. Empowering
+            Education Through Technology.
           </p>
         </div>
       </div>

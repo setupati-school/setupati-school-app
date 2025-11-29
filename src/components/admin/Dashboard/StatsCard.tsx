@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { StatsCardProps } from '@/types/type';
+import { StatsCardProps } from '@/types';
 
 export const StatsCard = ({
   title,

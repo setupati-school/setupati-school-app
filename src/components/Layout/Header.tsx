@@ -19,7 +19,7 @@ import { auth } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { LanguageSwitcher } from '@/components/Layout/LanguageSwitcher';
 
-export const Header = () => {
+const HeaderComponent: React.FC = () => {
   const { currentUser, resetStore } = useSchoolStore();
   const { resetAuthStore } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -134,3 +134,5 @@ export const Header = () => {
     </header>
   );
 };
+
+export const Header = React.memo(HeaderComponent);

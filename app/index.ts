@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import helmet from 'helmet';
 import cors from 'cors';
 import studentRoutes from './routes/studentRoute.js';
 import path from 'path';
@@ -27,6 +28,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+app.use(helmet());
 app.use(express.json());
 app.use(cors({ origin: true }));
 

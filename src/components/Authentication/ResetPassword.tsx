@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
+// src/components/auth/ResetPassword.tsx
+import React, { memo, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,30 +17,43 @@ import {
 } from '@/components/ui/card';
 import { Mail, EyeOff, Eye, CheckCircle, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 import { verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { FormDataType } from './AuthLayout';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
+import { resetPasswordSchema } from '@/components/zod';
 
 interface ResetPasswordProps {
   toggleCurrentView: (view: 'login' | 'forgot' | 'reset') => void;
-  formData: FormDataType;
-  displayFormData: (data: Partial<FormDataType>) => void;
-  handleInputChange: (field: string, value: string) => void;
-  handleBooleanInputChange: (field: string, value: boolean) => void;
 }
 
-export const ResetPassword: React.FC<ResetPasswordProps> = ({
-  toggleCurrentView,
-  formData,
-  displayFormData,
-  handleInputChange,
-  handleBooleanInputChange
+type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
+
+const ResetPasswordComponent: React.FC<ResetPasswordProps> = ({
+  toggleCurrentView
 }) => {
   const [searchParams] = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [email, setEmail] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const oobCode = searchParams.get('oobCode');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+    reset
+  } = useForm<ResetPasswordValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      password: '',
+      confirmPassword: ''
+    },
+    mode: 'onSubmit'
+  });
 
   useEffect(() => {
     const verifyCode = async () => {
@@ -51,18 +69,46 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
       }
 
       try {
-        const email = await verifyPasswordResetCode(auth, oobCode);
-        displayFormData({ email: email });
-      } catch (error) {
-        let errorMessage = '';
-        if ((error as { code: string }).code === 'auth/expired-action-code') {
-          errorMessage = 'Password Reset Link Expired.';
-        } else {
-          errorMessage =
-            error instanceof Error
-              ? error.response?.data?.error || error?.message
-              : 'Invalid or expired password reset link.';
+        const emailFromCode = await verifyPasswordResetCode(auth, oobCode);
+        setEmail(emailFromCode);
+      } catch (error: unknown) {
+        let errorMessage = 'Invalid or expired password reset link.';
+
+        if (axios.isAxiosError(error)) {
+          const resp = error.response;
+          if (resp?.data) {
+            const data = resp.data as Record<string, unknown> | string;
+            if (typeof data === 'string') {
+              errorMessage = data;
+            } else if (data && typeof data === 'object') {
+              const dataObj = data as Record<string, unknown>;
+              if ('error' in dataObj && typeof dataObj.error === 'string') {
+                errorMessage = dataObj.error;
+              } else if (
+                'message' in dataObj &&
+                typeof dataObj.message === 'string'
+              ) {
+                errorMessage = dataObj.message;
+              } else {
+                errorMessage = JSON.stringify(dataObj);
+              }
+            }
+          } else {
+            errorMessage = error.message;
+          }
+        } else if (error && typeof error === 'object' && 'code' in error) {
+          const parsedError = firebaseErrorParser(
+            error as Record<string, unknown> & {
+              code: string;
+              message: string;
+              httpCode?: number;
+            }
+          );
+          errorMessage = parsedError.message;
+        } else if (error instanceof Error && error.message) {
+          errorMessage = error.message;
         }
+
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -74,36 +120,73 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
     };
 
     verifyCode();
-  }, [oobCode, toast]);
+  }, [oobCode, toast, toggleCurrentView]);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const onSubmit = async (values: ResetPasswordValues) => {
+    if (!oobCode) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Reset link is missing or invalid.',
+        duration: 3000
+      });
+      return;
+    }
 
     try {
-      if (formData?.password !== formData?.confirmPassword) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Passwords do not match.',
-          duration: 3000
-        });
-        setIsLoading(false);
-        return;
-      } else {
-        await confirmPasswordReset(auth, oobCode as string, formData.password);
-        toast({
-          title: 'Success',
-          description: 'Successfully Reseted your password.',
-          duration: 3000
-        });
-        toggleCurrentView('login');
+      await confirmPasswordReset(auth, oobCode, values.password);
+
+      toast({
+        title: 'Success',
+        description: 'Your password has been reset successfully.',
+        duration: 3000
+      });
+
+      reset();
+      toggleCurrentView('login');
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to reset your password.';
+
+      if (axios.isAxiosError(error)) {
+        const resp = error.response;
+        if (resp?.data) {
+          const data = resp.data as Record<string, unknown> | string;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (data && typeof data === 'object') {
+            const dataObj = data as Record<string, unknown>;
+            if ('error' in dataObj && typeof dataObj.error === 'string') {
+              errorMessage = dataObj.error;
+            } else if (
+              'message' in dataObj &&
+              typeof dataObj.message === 'string'
+            ) {
+              errorMessage = dataObj.message;
+            } else {
+              errorMessage = JSON.stringify(dataObj);
+            }
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const parsedError = firebaseErrorParser(
+          error as Record<string, unknown> & {
+            code: string;
+            message: string;
+            httpCode?: number;
+          }
+        );
+        errorMessage = parsedError.message;
+      } else if (error instanceof Error && error.message) {
+        errorMessage = error.message;
       }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error?.message
-          : 'Failed to Reset your password.';
+
+      setError('password', {
+        type: 'server',
+        message: errorMessage
+      });
+
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -111,7 +194,6 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
         duration: 3000
       });
     }
-    setIsLoading(false);
   };
 
   return (
@@ -125,7 +207,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
             Reset Password
           </CardTitle>
           <CardDescription className="text-muted-foreground mt-2">
-            Enter your New password
+            Enter your new password
           </CardDescription>
         </div>
       </CardHeader>
@@ -142,15 +224,16 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
             <Input
               id="reset-email"
               type="email"
-              placeholder="Enter your email address"
-              value={formData?.email}
+              placeholder="Email"
+              value={email}
               className="pl-10 border-border focus:ring-accent"
-              disabled={formData?.email ? true : false}
-              required
+              disabled
             />
           </div>
         </div>
-        <form className="space-y-4">
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Password */}
           <div className="space-y-2">
             <Label
               htmlFor="password"
@@ -162,34 +245,34 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 id="password"
-                type={formData?.showPassword ? 'text' : 'password'}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
-                value={formData?.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
                 className="pl-10 pr-10 border-border focus:ring-accent"
-                required
+                {...register('password')}
               />
               <button
                 type="button"
-                onClick={() =>
-                  handleBooleanInputChange(
-                    'showPassword',
-                    !formData?.showPassword
-                  )
-                }
+                onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {formData?.showPassword ? (
+                {showPassword ? (
                   <EyeOff className="w-4 h-4" />
                 ) : (
                   <Eye className="w-4 h-4" />
                 )}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">
+                {errors.password.message}
+              </p>
+            )}
           </div>
+
+          {/* Confirm Password */}
           <div className="space-y-2">
             <Label
-              htmlFor="password"
+              htmlFor="confirm-password"
               className="text-sm font-medium text-foreground"
             >
               Confirm Password
@@ -197,44 +280,44 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                id="password"
-                type={formData?.showConfirmPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={formData?.confirmPassword}
-                onChange={(e) =>
-                  handleInputChange('confirmPassword', e.target.value)
-                }
+                id="confirm-password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm your password"
                 className="pl-10 pr-10 border-border focus:ring-accent"
-                required
+                {...register('confirmPassword')}
               />
               <button
                 type="button"
-                onClick={() =>
-                  handleBooleanInputChange(
-                    'showConfirmPassword',
-                    !formData?.showConfirmPassword
-                  )
-                }
+                onClick={() => setShowConfirmPassword((s) => !s)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {formData?.showConfirmPassword ? (
+                {showConfirmPassword ? (
                   <EyeOff className="w-4 h-4" />
                 ) : (
                   <Eye className="w-4 h-4" />
                 )}
               </button>
             </div>
+            {errors.confirmPassword && (
+              <p className="text-sm text-destructive">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
+
           <Button
-            onClick={handleResetPassword}
+            type="submit"
             variant="login"
             size="lg"
             className="w-full"
+            disabled={isSubmitting}
           >
-            {isLoading ? 'Reseting your Password.....' : 'Reset Password'}
+            {isSubmitting ? 'Resetting your password...' : 'Reset Password'}
           </Button>
         </form>
       </CardContent>
     </Card>
   );
 };
+
+export const ResetPassword = memo(ResetPasswordComponent);

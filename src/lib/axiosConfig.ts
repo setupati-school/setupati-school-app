@@ -31,7 +31,7 @@ api.interceptors.response.use(
         description: 'Network error. Please check your connection.',
         variant: 'destructive'
       });
-    } else if (error.response.status === 401) {
+    } else if (error.response?.status === 401) {
       toast({
         title: 'Error',
         description: 'Session expired. Please log in again.',
@@ -40,7 +40,7 @@ api.interceptors.response.use(
     } else {
       toast({
         title: 'Error',
-        description: error.response.data?.message || 'Something went wrong',
+        description: error.response?.data?.message || 'Something went wrong',
         variant: 'destructive'
       });
     }

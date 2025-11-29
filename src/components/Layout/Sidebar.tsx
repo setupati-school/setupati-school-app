@@ -1,80 +1,65 @@
+import React, { useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useSchoolStore } from '@/store/schoolStore';
+import { useSchoolStore, useAuthStore } from '@/store';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ChevronLeft, ChevronRight, School } from 'lucide-react';
 import {
-  LayoutDashboard,
-  Users,
-  GraduationCap,
-  BookOpen,
-  Calendar,
-  FileText,
-  ClipboardCheck,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  School
-} from 'lucide-react';
+  StudentNavigationItems,
+  TeacherNavigationItems,
+  AdminNavigationItems
+} from './constants';
+
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 
-const navigationItems = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard
-  },
-  {
-    id: 'students',
-    label: 'Students',
-    icon: GraduationCap
-  },
-  {
-    id: 'teachers',
-    label: 'Teachers',
-    icon: Users
-  },
-  {
-    id: 'subjects',
-    label: 'Subjects',
-    icon: BookOpen
-  },
-  {
-    id: 'attendance',
-    label: 'Attendance',
-    icon: ClipboardCheck
-  },
-  {
-    id: 'timetable',
-    label: 'Timetable',
-    icon: Calendar
-  },
-  {
-    id: 'circulars',
-    label: 'Circulars',
-    icon: FileText
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings
-  }
-];
-
-export const Sidebar = () => {
-  const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed } =
-    useSchoolStore();
+const SidebarComponent: React.FC = () => {
+  const { sidebarCollapsed, setSidebarCollapsed } = useSchoolStore();
+  const { role } = useAuthStore();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  let navigationItems = StudentNavigationItems;
+
+  switch (role) {
+    case 'teacher':
+      navigationItems = TeacherNavigationItems;
+      break;
+    case 'admin':
+      navigationItems = AdminNavigationItems;
+      break;
+    default:
+      navigationItems = StudentNavigationItems;
+  }
 
   // On mobile, always keep sidebar collapsed
   const isCollapsed = isMobile ? true : sidebarCollapsed;
+
   const { t } = useTranslation();
-  i18n.language = useSchoolStore(state => state.currentLanguage);
+  i18n.language = useSchoolStore((state) => state.currentLanguage);
+
+  const handleNavigate = useCallback(
+    (to: string) => {
+      navigate(to);
+    },
+    [navigate]
+  );
+
+  const isPathActive = useCallback(
+    (path: string) => {
+      if (location.pathname === path) return true;
+      // also treat nested URLs as active (e.g. /subjects/123)
+      return location.pathname.startsWith(path + '/');
+    },
+    [location.pathname]
+  );
 
   return (
     <div
       className={cn(
-        'relative bg-card border-r border-border h-screen transition-all duration-300 ease-in-out',
+        'relative bg-card border-r sticky top-0 border-border h-screen transition-all duration-300 ease-in-out',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
@@ -87,7 +72,9 @@ export const Sidebar = () => {
                 <School className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">{t('title')}</h1>
+                <h1 className="font-bold text-lg text-foreground">
+                  {t('title')}
+                </h1>
                 <p className="text-xs text-muted-foreground">
                   School Management
                 </p>
@@ -115,7 +102,7 @@ export const Sidebar = () => {
       <nav className="p-2 space-y-1">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeView === item.id;
+          const isActive = isPathActive(item.to);
 
           return (
             <Button
@@ -127,7 +114,7 @@ export const Sidebar = () => {
                 isActive &&
                   'bg-gradient-primary text-primary-foreground shadow-soft'
               )}
-              onClick={() => setActiveView(item.id)}
+              onClick={() => handleNavigate(item.to)}
             >
               <Icon className={cn('h-4 w-4', !isCollapsed && 'mr-3')} />
               {!isCollapsed && (
@@ -140,3 +127,5 @@ export const Sidebar = () => {
     </div>
   );
 };
+
+export const Sidebar = React.memo(SidebarComponent);

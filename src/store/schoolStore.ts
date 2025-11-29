@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
-import { SchoolStore, User } from '@/types/schoolStoreType';
+import { SchoolStore, User } from '@/types';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import api from '@/lib/axiosConfig';

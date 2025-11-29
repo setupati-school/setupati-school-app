@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { AuthState, UserRole } from '@/types/authType';
+import { AuthState, UserRole } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
 export const useAuthStore = create<AuthState>()(
