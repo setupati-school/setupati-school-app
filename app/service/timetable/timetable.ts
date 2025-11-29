@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import type timeTable from '@setupati-school/setupati-types/models';
 import logger from '../../utils/logger.js';
 import {
   addTimeTable,
@@ -8,14 +7,11 @@ import {
   deleteTimeTable,
   getAllTimeTables
 } from '../../api/timetable/timetable.js';
-type TimeTable = typeof timeTable;
 
-export const createTimeTable = async (
-  req: Request<{ TimeTable: TimeTable }>,
-  res: Response
-) => {
+// Admin only - Create timetable entry
+export const createTimeTable = async (req: Request, res: Response) => {
   try {
-    const { body: data } = req ?? {};
+    const data = req.body;
     const id = await addTimeTable(data);
     res.status(201).json({ id });
   } catch (error) {
@@ -24,12 +20,10 @@ export const createTimeTable = async (
   }
 };
 
-export const searchTimeTable = async (
-  req: Request<{ time_table_id: string }>,
-  res: Response
-) => {
+// Authenticated - Search timetable by ID
+export const searchTimeTable = async (req: Request, res: Response) => {
   try {
-    const { time_table_id: timeTableId } = req.params;
+    const timeTableId = req.params.time_table_id;
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
@@ -41,12 +35,13 @@ export const searchTimeTable = async (
   }
 };
 
+// Admin only - Delete timetable entry
 export const deleteTimeTableDetails = async (
-  req: Request<{ time_table_id: string }>,
+  req: Request,
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { time_table_id: timeTableId } = req.params;
+    const timeTableId = req.params.time_table_id;
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
@@ -62,26 +57,25 @@ export const deleteTimeTableDetails = async (
   }
 };
 
+// Authenticated - Get all timetables
 export const getAllTimeTablesDetails = async (req: Request, res: Response) => {
   try {
     const timeTables = await getAllTimeTables();
-    res.status(200).json(timeTables);
+    res.status(200).json({ timetables: timeTables });
   } catch (error) {
     logger.error('Error fetching all time tables:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
-export const updateTimeTableDetails = async (
-  req: Request<{ time_table_id: string; TimeTable: Partial<TimeTable> }>,
-  res: Response
-) => {
+// Admin only - Update timetable entry
+export const updateTimeTableDetails = async (req: Request, res: Response) => {
   try {
-    const { time_table_id: timeTableId } = req.params;
+    const timeTableId = req.params.time_table_id;
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
-    const data = req?.body;
+    const data = req.body;
     const updated = await updateTimeTable(timeTableId, data);
     if (!updated) {
       return res.status(404).json({ error: 'Time Table not found' });

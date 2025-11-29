@@ -7,6 +7,7 @@ import { Gallery, Forbidden, LandingPage, NotFound } from '@/pages';
 import { DashboardRoute } from '@/components/Dashboard';
 import { CircularsPage } from '@/components/Circulars';
 import { SubjectsPage } from '@/components/Subject';
+import { TimetablePage } from '@/components/Timetable';
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -108,12 +109,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/timetable',
-        element: (
-          <ComingSoon
-            title="Timetable Management"
-            subtitle="Timetable module coming soon..."
-          />
-        )
+        element: <TimetablePage />
       },
       {
         path: '/attendance',

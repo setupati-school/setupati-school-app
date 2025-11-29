@@ -1,5 +1,4 @@
-import { Router, Request, Response } from 'express';
-import type timeTable from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createTimeTable,
   searchTimeTable,
@@ -7,43 +6,39 @@ import {
   getAllTimeTablesDetails,
   updateTimeTableDetails
 } from '../service/timetable/timetable.js';
-type TimeTable = typeof timeTable;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const timeTableRouter = Router();
 
+// Admin only - Create timetable entry
 timeTableRouter.post(
   '/create',
-  (req: Request<{ TimeTable: TimeTable }>, res: Response) => {
-    createTimeTable(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  createTimeTable
 );
 
-timeTableRouter.get(
-  '/search/:time_table_id',
-  (req: Request<{ time_table_id: string }>, res: Response) => {
-    searchTimeTable(req, res);
-  }
-);
+// Public - Search timetable by ID
+timeTableRouter.get('/search/:time_table_id', searchTimeTable);
 
+// Admin only - Delete timetable entry
 timeTableRouter.delete(
   '/delete/:time_table_id',
-  (req: Request<{ time_table_id: string }>, res: Response) => {
-    deleteTimeTableDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  deleteTimeTableDetails
 );
 
-timeTableRouter.get('/all', (req: Request, res: Response) => {
-  return getAllTimeTablesDetails(req, res);
-});
+// Public - Get all timetables
+timeTableRouter.get('/all', getAllTimeTablesDetails);
 
+// Admin only - Update timetable entry
 timeTableRouter.put(
   '/update/:time_table_id',
-  (
-    req: Request<{ time_table_id: string; TimeTable: Partial<TimeTable> }>,
-    res: Response
-  ) => {
-    updateTimeTableDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  updateTimeTableDetails
 );
 
 export default timeTableRouter;

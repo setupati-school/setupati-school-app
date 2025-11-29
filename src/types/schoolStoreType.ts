@@ -115,6 +115,19 @@ export interface Homework {
   updated_at: string;
 }
 
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
+
+export interface Timetable {
+  id: string;
+  day_of_week: DayOfWeek;
+  period: number;
+  section_id: string;
+  subject_id: string;
+  teacher_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Store interface
 export interface SchoolStore {
   // Current user
@@ -129,6 +142,7 @@ export interface SchoolStore {
   attendance: Attendance[];
   circulars: Circular[];
   homework: Homework[];
+  timetables: Timetable[];
 
   // UI State
   activeView: string;
@@ -150,6 +164,7 @@ export interface SchoolStore {
   setAttendance: (attendance: Attendance[]) => void;
   setCirculars: (circulars: Circular[]) => void;
   setHomework: (homework: Homework[]) => void;
+  setTimetables: (timetables: Timetable[]) => void;
 
   // Statistics
   getStudentCount: () => number;
