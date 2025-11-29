@@ -8,7 +8,6 @@ import {
   getAllTimeTables
 } from '../../api/timetable/timetable.js';
 
-// Admin only - Create timetable entry
 export const createTimeTable = async (req: Request, res: Response) => {
   try {
     const data = req.body;
@@ -20,7 +19,6 @@ export const createTimeTable = async (req: Request, res: Response) => {
   }
 };
 
-// Authenticated - Search timetable by ID
 export const searchTimeTable = async (req: Request, res: Response) => {
   try {
     const timeTableId = req.params.time_table_id;
@@ -35,7 +33,6 @@ export const searchTimeTable = async (req: Request, res: Response) => {
   }
 };
 
-// Admin only - Delete timetable entry
 export const deleteTimeTableDetails = async (
   req: Request,
   res: Response
@@ -57,7 +54,6 @@ export const deleteTimeTableDetails = async (
   }
 };
 
-// Authenticated - Get all timetables
 export const getAllTimeTablesDetails = async (req: Request, res: Response) => {
   try {
     const timeTables = await getAllTimeTables();
@@ -68,7 +64,6 @@ export const getAllTimeTablesDetails = async (req: Request, res: Response) => {
   }
 };
 
-// Admin only - Update timetable entry
 export const updateTimeTableDetails = async (req: Request, res: Response) => {
   try {
     const timeTableId = req.params.time_table_id;

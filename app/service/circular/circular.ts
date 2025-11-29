@@ -8,13 +8,11 @@ import {
   searchCircular as searchCircularApi
 } from '../../api/circular/circular.js';
 
-// Extended type for circular with dates
 interface CircularWithDates extends Record<string, unknown> {
   issued_date?: string;
   valid_until?: string;
 }
 
-// Admin only - Create circular
 export const createCircular = async (req: Request, res: Response) => {
   try {
     const data = req.body;
@@ -26,7 +24,6 @@ export const createCircular = async (req: Request, res: Response) => {
   }
 };
 
-// Public - Search circular by ID
 export const searchCircular = async (req: Request, res: Response) => {
   try {
     const circularId = req.params.circular_id;
@@ -41,7 +38,6 @@ export const searchCircular = async (req: Request, res: Response) => {
   }
 };
 
-// Admin only - Delete circular
 export const deleteCircularDetails = async (
   req: Request,
   res: Response
@@ -63,7 +59,6 @@ export const deleteCircularDetails = async (
   }
 };
 
-// Public - Get all circulars
 export const getAllCirculars = async (req: Request, res: Response) => {
   try {
     const rawCirculars = await getAllCircularDetails();
@@ -88,7 +83,6 @@ export const getAllCirculars = async (req: Request, res: Response) => {
   }
 };
 
-// Admin only - Update circular
 export const updateCircularDetails = async (req: Request, res: Response) => {
   try {
     const circularId = req.params.circular_id;

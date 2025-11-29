@@ -8,7 +8,6 @@ import {
 } from '../../api/subject/subject.js';
 import logger from '../../utils/logger.js';
 
-// Extended type for subject with dates
 interface SubjectWithDates extends Record<string, unknown> {
   subject_name?: string;
   grade_id?: string;
@@ -16,7 +15,6 @@ interface SubjectWithDates extends Record<string, unknown> {
   updated_at?: string;
 }
 
-// Admin only - Create subject
 export const createSubject = async (req: Request, res: Response) => {
   try {
     const data = req.body;
@@ -28,7 +26,6 @@ export const createSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Public - Search subject by ID
 export const searchSubject = async (req: Request, res: Response) => {
   try {
     const subjectId = req.params.subject_id;
@@ -43,7 +40,6 @@ export const searchSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Admin only - Delete subject
 export const deleteSubjectDetails = async (
   req: Request,
   res: Response
@@ -65,7 +61,6 @@ export const deleteSubjectDetails = async (
   }
 };
 
-// Public - Get all subjects
 export const getAllSubjects = async (req: Request, res: Response) => {
   try {
     const rawSubjects = await getAllSubjectDetails();
@@ -91,7 +86,6 @@ export const getAllSubjects = async (req: Request, res: Response) => {
   }
 };
 
-// Admin only - Update subject
 export const updateSubjectDetails = async (req: Request, res: Response) => {
   try {
     const subjectId = req.params.subject_id;

@@ -11,7 +11,6 @@ import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const subjectRouter = Router();
 
-// Admin only - Create subject
 subjectRouter.post(
   '/create',
   isAuthenticated,
@@ -19,10 +18,8 @@ subjectRouter.post(
   createSubject
 );
 
-// Public - Search subject
 subjectRouter.get('/search/:subject_id', searchSubject);
 
-// Admin only - Delete subject
 subjectRouter.delete(
   '/delete/:subject_id',
   isAuthenticated,
@@ -30,10 +27,8 @@ subjectRouter.delete(
   deleteSubjectDetails
 );
 
-// Public - Get all subjects
 subjectRouter.get('/all', getAllSubjects);
 
-// Admin only - Update subject
 subjectRouter.put(
   '/update/:subject_id',
   isAuthenticated,

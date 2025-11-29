@@ -11,7 +11,6 @@ import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const circularRouter = Router();
 
-// Admin only - Create circular
 circularRouter.post(
   '/create',
   isAuthenticated,
@@ -19,10 +18,8 @@ circularRouter.post(
   createCircular
 );
 
-// Public - Search circular
 circularRouter.get('/search/:circular_id', searchCircular);
 
-// Admin only - Delete circular
 circularRouter.delete(
   '/delete/:circular_id',
   isAuthenticated,
@@ -30,10 +27,8 @@ circularRouter.delete(
   deleteCircularDetails
 );
 
-// Public - Get all circulars
 circularRouter.get('/all', getAllCirculars);
 
-// Admin only - Update circular
 circularRouter.put(
   '/update/:circular_id',
   isAuthenticated,
