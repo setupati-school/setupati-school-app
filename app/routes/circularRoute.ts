@@ -1,5 +1,4 @@
-import { Router, Request, Response } from 'express';
-import type circular from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createCircular,
   deleteCircularDetails,
@@ -7,43 +6,39 @@ import {
   searchCircular,
   updateCircularDetails
 } from '../service/circular/circular.js';
-type Circular = typeof circular;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const circularRouter = Router();
 
+// Admin only - Create circular
 circularRouter.post(
   '/create',
-  (req: Request<{ Circular: Circular }>, res: Response) => {
-    createCircular(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  createCircular
 );
 
-circularRouter.get(
-  '/search/:circular_id',
-  (req: Request<{ circular_id: string }>, res: Response) => {
-    searchCircular(req, res);
-  }
-);
+// Public - Search circular
+circularRouter.get('/search/:circular_id', searchCircular);
 
+// Admin only - Delete circular
 circularRouter.delete(
   '/delete/:circular_id',
-  (req: Request<{ circular_id: string }>, res: Response) => {
-    deleteCircularDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  deleteCircularDetails
 );
 
-circularRouter.get('/all', (req: Request, res: Response) => {
-  return getAllCirculars(req, res);
-});
+// Public - Get all circulars
+circularRouter.get('/all', getAllCirculars);
 
+// Admin only - Update circular
 circularRouter.put(
   '/update/:circular_id',
-  (
-    req: Request<{ circular_id: string; Circular: Partial<Circular> }>,
-    res: Response
-  ) => {
-    updateCircularDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  updateCircularDetails
 );
 
 export default circularRouter;

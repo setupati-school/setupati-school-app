@@ -173,18 +173,38 @@ export const CircularsPage: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  // Delete circular using axios
+  // Delete circular using axios (Admin only)
   const handleDeleteConfirm = async () => {
     if (!circularToDelete) return;
+
+    if (!isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'Only administrators can delete circulars',
+        variant: 'destructive'
+      });
+      setDeleteDialogOpen(false);
+      return;
+    }
+
     setDeleting(true);
 
     try {
       const token = await getAuthToken();
+      if (!token) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to perform this action',
+          variant: 'destructive'
+        });
+        return;
+      }
+
       await axios.delete(
         `${BACKEND_URL}/circulars/delete/${circularToDelete.id}`,
         {
           headers: {
-            Authorization: token ? `Bearer ${token}` : ''
+            Authorization: `Bearer ${token}`
           }
         }
       );
@@ -197,13 +217,29 @@ export const CircularsPage: React.FC = () => {
 
       // Refresh the list
       fetchCirculars();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting circular:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete circular',
-        variant: 'destructive'
-      });
+      const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+
+      if (axiosError.response?.status === 401) {
+        toast({
+          title: 'Authentication Failed',
+          description: 'Please log in again to continue',
+          variant: 'destructive'
+        });
+      } else if (axiosError.response?.status === 403) {
+        toast({
+          title: 'Access Denied',
+          description: 'You do not have permission to delete circulars',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: axiosError.response?.data?.message || 'Failed to delete circular',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import type circular from '@setupati-school/setupati-types/models';
 import logger from '../../utils/logger.js';
 import {
   addCircular,
@@ -8,7 +7,6 @@ import {
   updateCircular,
   searchCircular as searchCircularApi
 } from '../../api/circular/circular.js';
-type Circular = typeof circular;
 
 // Extended type for circular with dates
 interface CircularWithDates extends Record<string, unknown> {
@@ -16,12 +14,10 @@ interface CircularWithDates extends Record<string, unknown> {
   valid_until?: string;
 }
 
-export const createCircular = async (
-  req: Request<{ Circular: Circular }>,
-  res: Response
-) => {
+// Admin only - Create circular
+export const createCircular = async (req: Request, res: Response) => {
   try {
-    const { body: data } = req ?? {};
+    const data = req.body;
     const id = await addCircular(data);
     res.status(201).json({ id });
   } catch (error) {
@@ -30,12 +26,10 @@ export const createCircular = async (
   }
 };
 
-export const searchCircular = async (
-  req: Request<{ circular_id: string }>,
-  res: Response
-) => {
+// Public - Search circular by ID
+export const searchCircular = async (req: Request, res: Response) => {
   try {
-    const { circular_id: circularId } = req.params;
+    const circularId = req.params.circular_id;
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
@@ -47,12 +41,13 @@ export const searchCircular = async (
   }
 };
 
+// Admin only - Delete circular
 export const deleteCircularDetails = async (
-  req: Request<{ circular_id: string }>,
+  req: Request,
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { circular_id: circularId } = req.params;
+    const circularId = req.params.circular_id;
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
@@ -68,6 +63,7 @@ export const deleteCircularDetails = async (
   }
 };
 
+// Public - Get all circulars
 export const getAllCirculars = async (req: Request, res: Response) => {
   try {
     const rawCirculars = await getAllCircularDetails();
@@ -92,16 +88,14 @@ export const getAllCirculars = async (req: Request, res: Response) => {
   }
 };
 
-export const updateCircularDetails = async (
-  req: Request<{ circular_id: string; Circular: Partial<Circular> }>,
-  res: Response
-) => {
+// Admin only - Update circular
+export const updateCircularDetails = async (req: Request, res: Response) => {
   try {
-    const { circular_id: circularId } = req.params;
+    const circularId = req.params.circular_id;
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
-    const data = req?.body;
+    const data = req.body;
     const updated = await updateCircular(circularId, data);
     if (!updated) {
       return res.status(404).json({ error: 'Circular not found' });

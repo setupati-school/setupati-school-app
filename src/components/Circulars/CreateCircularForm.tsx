@@ -120,8 +120,18 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
 
     try {
       const token = await getAuthToken();
+      if (!token) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to perform this action',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return;
+      }
+
       const headers = {
-        Authorization: token ? `Bearer ${token}` : '',
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
@@ -153,16 +163,30 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      const backendError = (err as { response?: { data?: unknown } })?.response
-        ?.data as Record<string, unknown> | undefined;
+      const axiosError = err as { response?: { status?: number; data?: { message?: string; error?: string } } };
 
-      const msg =
-        (backendError && (backendError.error as string)) ||
-        (err instanceof Error
-          ? err.message
-          : `Failed to ${isEditing ? 'update' : 'create'} circular`);
+      if (axiosError.response?.status === 401) {
+        toast({
+          title: 'Authentication Failed',
+          description: 'Please log in again to continue',
+          variant: 'destructive'
+        });
+      } else if (axiosError.response?.status === 403) {
+        toast({
+          title: 'Access Denied',
+          description: 'Only administrators can create or edit circulars',
+          variant: 'destructive'
+        });
+      } else {
+        const msg =
+          axiosError.response?.data?.error ||
+          axiosError.response?.data?.message ||
+          (err instanceof Error
+            ? err.message
+            : `Failed to ${isEditing ? 'update' : 'create'} circular`);
 
-      toast({ title: 'Error', description: msg, variant: 'destructive' });
+        toast({ title: 'Error', description: msg, variant: 'destructive' });
+      }
     } finally {
       setLoading(false);
     }
