@@ -10,6 +10,12 @@ import {
 } from '../../api/circular/circular.js';
 type Circular = typeof circular;
 
+// Extended type for circular with dates
+interface CircularWithDates extends Record<string, unknown> {
+  issued_date?: string;
+  valid_until?: string;
+}
+
 export const createCircular = async (
   req: Request<{ Circular: Circular }>,
   res: Response
@@ -70,7 +76,7 @@ export const getAllCirculars = async (req: Request, res: Response) => {
       .filter((item) => item.circular !== null)
       .map((item) => ({
         id: item.id,
-        ...item.circular
+        ...(item.circular as CircularWithDates)
       }));
 
     circulars.sort((a, b) => {

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
+import { getAuth } from 'firebase/auth';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import api from '@/lib/axiosConfig';
+import { BACKEND_URL } from '@/lib/utils';
 import { Circular } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
 
@@ -40,6 +42,16 @@ const circularSchema = z.object({
 });
 
 type CircularFormData = z.infer<typeof circularSchema>;
+
+// Helper function to get auth token
+const getAuthToken = async (): Promise<string | null> => {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (user) {
+    return await user.getIdToken();
+  }
+  return null;
+};
 
 interface CreateCircularFormProps {
   open: boolean;
@@ -107,6 +119,12 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
     setLoading(true);
 
     try {
+      const token = await getAuthToken();
+      const headers = {
+        Authorization: token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json'
+      };
+
       const payload = {
         ...data,
         issued_date: new Date(data.issued_date).toISOString(),
@@ -114,13 +132,17 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
       };
 
       if (isEditing && circular) {
-        await api.put(`/circulars/update/${circular.id}`, payload);
+        await axios.put(`${BACKEND_URL}/circulars/update/${circular.id}`, payload, {
+          headers
+        });
         toast({
           title: 'Success',
           description: 'Circular updated successfully'
         });
       } else {
-        await api.post('/circulars/create', payload);
+        await axios.post(`${BACKEND_URL}/circulars/create`, payload, {
+          headers
+        });
         toast({
           title: 'Success',
           description: 'Circular created successfully'
