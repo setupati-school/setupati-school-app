@@ -64,8 +64,22 @@ export const deleteCircularDetails = async (
 
 export const getAllCirculars = async (req: Request, res: Response) => {
   try {
-    const circulars = await getAllCircularDetails();
-    res.status(200).json(circulars);
+    const rawCirculars = await getAllCircularDetails();
+
+    const circulars = rawCirculars
+      .filter((item) => item.circular !== null)
+      .map((item) => ({
+        id: item.id,
+        ...item.circular
+      }));
+
+    circulars.sort((a, b) => {
+      const dateA = new Date(a.issued_date || 0).getTime();
+      const dateB = new Date(b.issued_date || 0).getTime();
+      return dateB - dateA;
+    });
+
+    res.status(200).json({ circulars });
   } catch (error) {
     logger.error('Error fetching all circulars:', error);
     res.status(500).json({ error: 'Internal Server Error' });

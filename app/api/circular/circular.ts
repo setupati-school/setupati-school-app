@@ -14,7 +14,13 @@ if (!db)
 const circularCollection = db.collection('circulars');
 
 export const addCircular = async (data: Circular): Promise<string> => {
-  const docRef = await circularCollection.add(data);
+  const now = new Date().toISOString();
+  const circularData = {
+    ...data,
+    created_at: now,
+    updated_at: now
+  };
+  const docRef = await circularCollection.add(circularData);
   logger.info(`Circular added with ID: ${docRef.id}`);
   return docRef.id;
 };
@@ -33,20 +39,16 @@ export const getCircular = async (
 };
 
 export const deleteCircular = async (circularId: string): Promise<boolean> => {
-  const circularData = await getCircular(circularId);
-  if (!circularData.length || circularData[0].circular === null) {
+  const docRef = circularCollection.doc(circularId);
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
     logger.info(`No circular found to delete with ID: ${circularId}`);
     return false;
   }
-  const deletePromises = circularData.map(({ id }) => {
-    logger.info(`Deleting circular with ID: ${id}`);
-    return circularCollection.doc(id).delete();
-  });
 
-  await Promise.all(deletePromises);
-  logger.info(
-    `Deleted ${circularData.length} circular(s) with ID: ${circularId}`
-  );
+  await docRef.delete();
+  logger.info(`Deleted circular with ID: ${circularId}`);
   return true;
 };
 
@@ -81,18 +83,21 @@ export const updateCircular = async (
   data: Partial<Circular>
 ): Promise<boolean> => {
   logger.info(`Updating circular with ID: ${circularId}`);
-  const circularData = await getCircular(circularId);
-  if (!circularData.length || circularData[0].circular === null) {
+
+  const docRef = circularCollection.doc(circularId);
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
     logger.info(`No circular found to update with ID: ${circularId}`);
     return false;
   }
-  const updatePromises = circularData.map(({ id }) => {
-    const circularRef = circularCollection.doc(id);
-    return circularRef.update(data);
-  });
-  await Promise.all(updatePromises);
-  logger.info(
-    `Updated ${circularData.length} circular(s) with ID: ${circularId}`
-  );
+
+  const updateData = {
+    ...data,
+    updated_at: new Date().toISOString()
+  };
+
+  await docRef.update(updateData);
+  logger.info(`Updated circular with ID: ${circularId}`);
   return true;
 };
