@@ -215,10 +215,10 @@ export const initializeSampleData = () => {
   ]);
 
   store.setSubjects([
-    { id: 'SUBJ-MATH', name: 'Mathematics' },
-    { id: 'SUBJ-ENG', name: 'English' },
-    { id: 'SUBJ-SCI', name: 'Science' },
-    { id: 'SUBJ-HIST', name: 'History' }
+    { id: 'SUBJ-MATH', subject_name: 'Mathematics', grade_id: 'grade_1', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+    { id: 'SUBJ-ENG', subject_name: 'English', grade_id: 'grade_1', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+    { id: 'SUBJ-SCI', subject_name: 'Science', grade_id: 'grade_2', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+    { id: 'SUBJ-HIST', subject_name: 'History', grade_id: 'grade_2', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' }
   ]);
 
   // grouped exam results (backend-shaped)

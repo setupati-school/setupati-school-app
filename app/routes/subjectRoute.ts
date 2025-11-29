@@ -1,3 +1,4 @@
+import { Router } from 'express';
 import {
   createSubject,
   searchSubject,
@@ -5,45 +6,39 @@ import {
   getAllSubjects,
   updateSubjectDetails
 } from '../service/subject/subject.js';
-import { Router, Request, Response } from 'express';
-import type subject from '@setupati-school/setupati-types/models';
-type Subject = typeof subject;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const subjectRouter = Router();
 
+// Admin only - Create subject
 subjectRouter.post(
   '/create',
-  (req: Request<{ Subject: Subject }>, res: Response) => {
-    createSubject(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  createSubject
 );
 
-subjectRouter.get(
-  '/search/:subject_id',
-  (req: Request<{ subject_id: string }>, res: Response) => {
-    searchSubject(req, res);
-  }
-);
+// Public - Search subject
+subjectRouter.get('/search/:subject_id', searchSubject);
 
+// Admin only - Delete subject
 subjectRouter.delete(
   '/delete/:subject_id',
-  (req: Request<{ subject_id: string }>, res: Response) => {
-    deleteSubjectDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  deleteSubjectDetails
 );
 
-subjectRouter.get('/all', (req: Request, res: Response) => {
-  return getAllSubjects(req, res);
-});
+// Public - Get all subjects
+subjectRouter.get('/all', getAllSubjects);
 
+// Admin only - Update subject
 subjectRouter.put(
   '/update/:subject_id',
-  (
-    req: Request<{ subject_id: string; Subject: Partial<Subject> }>,
-    res: Response
-  ) => {
-    updateSubjectDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  updateSubjectDetails
 );
 
 export default subjectRouter;
