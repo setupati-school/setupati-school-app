@@ -133,10 +133,8 @@ jobs:
 
       - name: Decode Firebase service account
         id: decode_sa
-        env:
-          FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_HOSTING_TEST }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > service-account.json
+          echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | base64 --decode > service-account.json
           escaped=$(python3 -c "import json,sys; print(json.dumps(open('service-account.json').read()))")
           echo "::set-output name=decoded::$escaped"
 
