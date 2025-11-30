@@ -131,13 +131,6 @@ jobs:
             echo "ℹ️ No changes in app/"
           fi
 
-      - name: Decode Firebase service account (no jq)
-        id: decode_sa
-        run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | base64 --decode > service-account.json
-          escaped=$(python3 -c "import json,sys; print(json.dumps(open('service-account.json').read()))")
-          echo "::set-output name=decoded::$escaped"
-
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
         uses: FirebaseExtended/action-hosting-deploy@v0
