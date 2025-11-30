@@ -132,7 +132,7 @@ jobs:
           fi
 
       - name: Debug secret length
-        run: echo "Length: ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
+        run: echo "Length ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
 
 
       - name: Decode Firebase service account
