@@ -131,10 +131,16 @@ jobs:
             echo "ℹ️ No changes in app/"
           fi
 
+      - name: Debug secret length
+        run: echo "Length: ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
+
+
       - name: Decode Firebase service account
         id: decode_sa
+        env:
+          FIREBASE_SERVICE_ACCOUNT_HOSTING: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_HOSTING }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | base64 --decode > service-account.json
+          echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | tr -d '\r\n' | base64 --decode > service-account.json
           escaped=$(python3 -c "import json,sys; print(json.dumps(open('service-account.json').read()))")
           echo "::set-output name=decoded::$escaped"
 
