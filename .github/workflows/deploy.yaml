@@ -131,12 +131,19 @@ jobs:
             echo "ℹ️ No changes in app/"
           fi
 
+      - name: Decode Firebase service account
+        id: decode_sa
+        env:
+          FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
+        run: echo "::set-output name=decoded::$(echo \"$FIREBASE_SERVICE_ACCOUNT_BASE64\" | base64 --decode | jq -c .)"
+
+
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: $FIREBASE_SERVICE_ACCOUNT_HOSTING
+          firebaseServiceAccount: ${{ steps.decode_sa.outputs.decoded }}
           projectId: setupati-school-app
           channelId: pr-${{ github.event.pull_request.number }}
 
@@ -144,7 +151,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: $FIREBASE_SERVICE_ACCOUNT_HOSTING
+          firebaseServiceAccount: ${{ steps.decode_sa.outputs.decoded }}
           projectId: setupati-school-app
           channelId: live
 
