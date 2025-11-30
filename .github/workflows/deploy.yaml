@@ -134,23 +134,12 @@ jobs:
       - name: Debug secret length
         run: echo "Length ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
 
-
-      - name: Decode Firebase service account
-        id: decode_sa
-        env:
-          FIREBASE_SERVICE_ACCOUNT_DECODE: ${{ env.FIREBASE_SERVICE_ACCOUNT_HOSTING }}
-        run: |
-          echo "Length: ${#FIREBASE_SERVICE_ACCOUNT_DECODE}"
-          echo "$FIREBASE_SERVICE_ACCOUNT_DECODE" | tr -d '\r\n' | base64 --decode > service-account.json
-          escaped=$(python3 -c "import json,sys; print(json.dumps(open('service-account.json').read()))")
-          echo "::set-output name=decoded::$escaped"
-
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ steps.decode_sa.outputs.decoded }}
+          firebaseServiceAccount: $FIREBASE_SERVICE_ACCOUNT_HOSTING
           projectId: setupati-school-app
           channelId: pr-${{ github.event.pull_request.number }}
 
