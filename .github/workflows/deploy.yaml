@@ -135,8 +135,10 @@ jobs:
         id: decode_sa
         env:
           FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
-        run: echo "::set-output name=decoded::$(echo \"$FIREBASE_SERVICE_ACCOUNT_BASE64\" | base64 --decode | jq -c .)"
-
+        run: |
+          decoded=$(echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode)
+          escaped=$(printf '%s' "$decoded" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+          echo "::set-output name=decoded::$escaped"
 
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
