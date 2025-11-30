@@ -143,6 +143,7 @@ jobs:
           echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | tr -d '\r\n' | base64 --decode > service-account.json
           escaped=$(python3 -c "import json,sys; print(json.dumps(open('service-account.json').read()))")
           echo "::set-output name=decoded::$escaped"
+          echo "$decoded"
 
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
