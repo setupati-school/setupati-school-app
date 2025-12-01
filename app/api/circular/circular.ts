@@ -2,7 +2,7 @@ import { db } from '../../firebase.js';
 import type circular from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
+import { mapDocsWithKey, now } from '../../utils/helper.js';
 type Circular = typeof circular;
 
 if (!db)
@@ -14,14 +14,13 @@ if (!db)
 const circularCollection = db.collection('circulars');
 
 export const addCircular = async (data: Circular): Promise<string> => {
-  const now = new Date().toISOString();
   const circularData = {
     ...data,
     created_at: now,
     updated_at: now
   };
   const docRef = await circularCollection.add(circularData);
-  logger.info(`Circular added with ID: ${docRef.id}`);
+  logger.info(`Circular added with ID: ${docRef?.id}`);
   return docRef.id;
 };
 
@@ -94,8 +93,8 @@ export const updateCircular = async (
 
   const updateData = {
     ...data,
-    updated_at: new Date().toISOString()
-  };
+        updated_at: now
+      };
 
   await docRef.update(updateData);
   logger.info(`Updated circular with ID: ${circularId}`);

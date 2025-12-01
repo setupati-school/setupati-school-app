@@ -91,7 +91,7 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
                 <span>Issue Date</span>
               </div>
               <p className="text-sm font-medium">
-                {new Date(circular.issued_date).toLocaleDateString('en-US', {
+                {new Date(circular?.issued_date || '').toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
@@ -107,7 +107,7 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
               <p
                 className={`text-sm font-medium ${expired ? 'text-destructive' : ''}`}
               >
-                {new Date(circular.valid_until).toLocaleDateString('en-US', {
+                {new Date(circular?.valid_until || '').toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'

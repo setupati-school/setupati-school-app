@@ -15,7 +15,7 @@ interface CircularWithDates extends Record<string, unknown> {
 
 export const createCircular = async (req: Request, res: Response) => {
   try {
-    const data = req.body;
+    const data = req?.body;
     const id = await addCircular(data);
     res.status(201).json({ id });
   } catch (error) {
@@ -26,7 +26,7 @@ export const createCircular = async (req: Request, res: Response) => {
 
 export const searchCircular = async (req: Request, res: Response) => {
   try {
-    const circularId = req.params.circular_id;
+    const { circular_id: circularId } = req.params;
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
@@ -43,7 +43,7 @@ export const deleteCircularDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const circularId = req.params.circular_id;
+    const { circular_id: circularId } = req.params;
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
@@ -64,15 +64,15 @@ export const getAllCirculars = async (req: Request, res: Response) => {
     const rawCirculars = await getAllCircularDetails();
 
     const circulars = rawCirculars
-      .filter((item) => item.circular !== null)
-      .map((item) => ({
-        id: item.id,
-        ...(item.circular as CircularWithDates)
-      }));
+      ?.filter((item) => item?.circular !== null)
+      ?.map((item) => ({
+        id: item?.id,
+        ...(item?.circular as CircularWithDates)
+      })) || [];
 
-    circulars.sort((a, b) => {
-      const dateA = new Date(a.issued_date || 0).getTime();
-      const dateB = new Date(b.issued_date || 0).getTime();
+    circulars?.sort((a, b) => {
+      const dateA = new Date(a?.issued_date || 0).getTime();
+      const dateB = new Date(b?.issued_date || 0).getTime();
       return dateB - dateA;
     });
 
@@ -85,7 +85,7 @@ export const getAllCirculars = async (req: Request, res: Response) => {
 
 export const updateCircularDetails = async (req: Request, res: Response) => {
   try {
-    const circularId = req.params.circular_id;
+    const { circular_id: circularId } = req.params;
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }

@@ -28,7 +28,7 @@ export const createSubject = async (req: Request, res: Response) => {
 
 export const searchSubject = async (req: Request, res: Response) => {
   try {
-    const subjectId = req.params.subject_id;
+    const { subject_id: subjectId } = req.params;
     if (!subjectId) {
       return res.status(400).json({ error: 'Subject ID is required' });
     }
@@ -45,7 +45,7 @@ export const deleteSubjectDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const subjectId = req.params.subject_id;
+    const { subject_id: subjectId } = req.params;
     if (!subjectId) {
       return res.status(400).json({ error: 'Subject ID is required' });
     }
@@ -66,16 +66,16 @@ export const getAllSubjects = async (req: Request, res: Response) => {
     const rawSubjects = await getAllSubjectDetails();
 
     const subjects = rawSubjects
-      .filter((item) => item.subject !== null)
-      .map((item) => ({
-        id: item.id,
-        ...(item.subject as SubjectWithDates)
-      }));
+      ?.filter((item) => item?.subject !== null)
+      ?.map((item) => ({
+        id: item?.id,
+        ...(item?.subject as SubjectWithDates)
+      })) || [];
 
     // Sort by subject name
-    subjects.sort((a, b) => {
-      const nameA = (a.subject_name || '').toLowerCase();
-      const nameB = (b.subject_name || '').toLowerCase();
+    subjects?.sort((a, b) => {
+      const nameA = (a?.subject_name || '').toLowerCase();
+      const nameB = (b?.subject_name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
 
@@ -88,7 +88,7 @@ export const getAllSubjects = async (req: Request, res: Response) => {
 
 export const updateSubjectDetails = async (req: Request, res: Response) => {
   try {
-    const subjectId = req.params.subject_id;
+    const { subject_id: subjectId } = req.params;
     if (!subjectId) {
       return res.status(400).json({ error: 'Subject ID is required' });
     }

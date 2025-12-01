@@ -2,7 +2,7 @@ import { db } from '../../firebase.js';
 import type subject from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from './../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
+import { mapDocsWithKey, now } from '../../utils/helper.js';
 type Subject = typeof subject;
 
 if (!db)
@@ -14,14 +14,13 @@ if (!db)
 const subjectCollection = db.collection('subjects');
 
 export const addSubject = async (data: Subject): Promise<string> => {
-  const now = new Date().toISOString();
   const subjectData = {
     ...data,
     created_at: now,
     updated_at: now
   };
   const docRef = await subjectCollection.add(subjectData);
-  logger.info(`Subject added with ID: ${docRef.id}`);
+  logger.info(`Subject added with ID: ${docRef?.id}`);
   return docRef.id;
 };
 
@@ -98,7 +97,7 @@ export const updateSubject = async (
 
   const updateData = {
     ...data,
-    updated_at: new Date().toISOString()
+    updated_at: now
   };
 
   await docRef.update(updateData);

@@ -21,7 +21,7 @@ export const createTimeTable = async (req: Request, res: Response) => {
 
 export const searchTimeTable = async (req: Request, res: Response) => {
   try {
-    const timeTableId = req.params.time_table_id;
+    const { time_table_id: timeTableId } = req.params;
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
@@ -38,7 +38,7 @@ export const deleteTimeTableDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const timeTableId = req.params.time_table_id;
+    const { time_table_id: timeTableId } = req.params;
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
@@ -66,7 +66,7 @@ export const getAllTimeTablesDetails = async (req: Request, res: Response) => {
 
 export const updateTimeTableDetails = async (req: Request, res: Response) => {
   try {
-    const timeTableId = req.params.time_table_id;
+    const { time_table_id: timeTableId } = req.params;
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
