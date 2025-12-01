@@ -23,7 +23,7 @@ export const getTimeTable = async (
   timeTableId: string
 ): Promise<{ id: string; timeTable: TimeTable | null }[]> => {
   const timeTableDoc = await timeTableCollection
-    .where('time_table_id', '==', timeTableId)
+    .where('timetable_id', '==', timeTableId)
     .get();
   if (timeTableDoc.empty) {
     logger.info(`No time table found with ID: ${timeTableId}`);
@@ -56,7 +56,7 @@ export const searchTimeTable = async (
   timeTableId: string
 ): Promise<{ id: string; timeTable: TimeTable | null }[]> => {
   const snapshot = await timeTableCollection
-    .where('time_table_id', '==', timeTableId)
+    .where('timetable_id', '==', timeTableId)
     .get();
   if (snapshot.empty) {
     logger.info(`No time table found with ID: ${timeTableId}`);

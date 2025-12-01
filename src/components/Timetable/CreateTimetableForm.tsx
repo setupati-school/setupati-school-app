@@ -3,7 +3,6 @@ import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
 import {
   Dialog,
   DialogContent,
@@ -25,9 +24,21 @@ import { BACKEND_URL } from '@/lib/utils';
 import { Timetable, DayOfWeek } from '@/types/schoolStoreType';
 import { useSchoolStore } from '@/store/schoolStore';
 import { Loader2 } from 'lucide-react';
+import { getAuthToken } from '@/lib/utils';
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+// Period configuration with times
+const PERIODS = [
+  { period: 1, startTime: '9:00 AM', endTime: '9:45 AM' },
+  { period: 2, startTime: '9:45 AM', endTime: '10:30 AM' },
+  { period: 3, startTime: '11:00 AM', endTime: '11:45 AM' },
+  { period: 4, startTime: '11:45 AM', endTime: '12:30 PM' },
+  { period: 5, startTime: '1:30 PM', endTime: '2:15 PM' },
+  { period: 6, startTime: '2:15 PM', endTime: '3:00 PM' },
+  { period: 7, startTime: '3:15 PM', endTime: '3:45 PM' },
+  { period: 8, startTime: '3:45 PM', endTime: '4:30 PM' }
+];
 
 const timetableSchema = z.object({
   day_of_week: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], {
@@ -40,15 +51,6 @@ const timetableSchema = z.object({
 });
 
 type TimetableFormData = z.infer<typeof timetableSchema>;
-
-const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
-};
 
 interface CreateTimetableFormProps {
   open: boolean;
@@ -71,7 +73,7 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
   const { sections, subjects, teachers, grades } = useSchoolStore();
   const [loading, setLoading] = useState(false);
   const [selectedGradeId, setSelectedGradeId] = useState<string>(preSelectedGrade || '');
-  const isEditing = !!timetable?.id;
+  const isEditing = !!(timetable?.timetable_id || timetable?.id);
 
   const {
     handleSubmit,
@@ -96,24 +98,35 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
   // Filter sections by selected grade using grade's section_ids
   const filteredSections = useMemo(() => {
     if (!selectedGradeId) return sections;
-    const selectedGradeData = grades.find(g => g.grade_id === selectedGradeId);
-    if (!selectedGradeData?.section_id?.length) return [];
-    return sections.filter(s => selectedGradeData.section_id.includes(s.section_id));
+    const selectedGradeData = grades.find(g => g?.grade_id === selectedGradeId || g?.id === selectedGradeId);
+    if (selectedGradeData?.section_ids?.length) {
+      // Filter sections that are in the grade's section_ids array
+      return sections.filter(s =>
+        selectedGradeData?.section_ids.includes(s?.section_id) ||
+        selectedGradeData?.section_ids.includes(s?.id)
+      );
+    }
+    // Fallback: filter by section's grade_id
+    return sections.filter(s => s?.grade_id === selectedGradeId);
   }, [sections, grades, selectedGradeId]);
 
   // Get grade_id from selected section
   const selectedSection = useMemo(() => {
-    return sections.find(s => s.section_id === watchedSectionId);
+    return sections.find(s => s?.section_id === watchedSectionId || s?.id === watchedSectionId);
   }, [sections, watchedSectionId]);
 
   // Filter subjects by grade using grade's subject_ids
   const filteredSubjects = useMemo(() => {
     if (selectedGradeId) {
-      const selectedGradeData = grades.find(g => g.id === selectedGradeId);
+      const selectedGradeData = grades.find(g => g?.grade_id === selectedGradeId || g?.id === selectedGradeId);
       if (!selectedGradeData?.subject_ids?.length) return subjects;
-      return subjects.filter(s => selectedGradeData.subject_ids.includes(s.id));
+      return subjects.filter(s =>
+        selectedGradeData?.subject_ids.includes(s?.subject_id) ||
+        selectedGradeData?.subject_ids.includes(s?.id)
+      );
     }
-    return subjects;
+    // Fallback: filter by subject's grade_id matching selected grade
+    return subjects.filter(s => s?.grade_id === selectedGradeId || !selectedGradeId);
   }, [subjects, grades, selectedGradeId]);
 
   // Handle grade change - reset section and subject
@@ -126,16 +139,18 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
   useEffect(() => {
     if (timetable) {
       // Set grade from section
-      const section = sections.find(s => s.id === timetable.section_id);
+      const section = sections.find(s => s.id === timetable?.section_id || s.section_id === timetable?.section_id);
       if (section) {
-        setSelectedGradeId(section.grade_id);
+        setSelectedGradeId(section?.grade_id);
+      } else if (preSelectedGrade) {
+        setSelectedGradeId(preSelectedGrade);
       }
       reset({
-        day_of_week: timetable.day_of_week,
-        period: timetable.period,
-        section_id: timetable.section_id || preSelectedSection || '',
-        subject_id: timetable.subject_id || '',
-        teacher_id: timetable.teacher_id || ''
+        day_of_week: timetable?.day_of_week,
+        period: timetable?.period,
+        section_id: timetable?.section_id || preSelectedSection || '',
+        subject_id: timetable?.subject_id || '',
+        teacher_id: timetable?.teacher_id || ''
       });
     } else {
       setSelectedGradeId(preSelectedGrade || '');
@@ -177,7 +192,8 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
       };
 
       if (isEditing && timetable) {
-        await axios.put(`${BACKEND_URL}/timetables/update/${timetable.id}`, payload, {
+        const timetableId = timetable?.timetable_id;
+        await axios.put(`${BACKEND_URL}/timetables/update/${timetableId}`, payload, {
           headers
         });
         toast({
@@ -332,9 +348,9 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
                       <SelectValue placeholder="Select period" />
                     </SelectTrigger>
                     <SelectContent>
-                      {PERIODS.map((period) => (
-                        <SelectItem key={period} value={period.toString()}>
-                          Period {period}
+                      {PERIODS.map((p) => (
+                        <SelectItem key={p?.period} value={p?.period.toString()}>
+                          Period {p?.period} ({p?.startTime} - {p?.endTime})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -363,7 +379,7 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {filteredSubjects.map((subject) => (
-                      <SelectItem key={subject?.id} value={subject?.id}>
+                      <SelectItem key={subject?.subject_id || subject?.id} value={subject?.subject_id || subject?.id}>
                         {subject?.subject_name}
                       </SelectItem>
                     ))}
@@ -392,7 +408,7 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {teachers.map((teacher) => (
-                      <SelectItem key={teacher?.id} value={teacher?.id}>
+                      <SelectItem key={teacher?.teacher_id || teacher?.id} value={teacher?.teacher_id || teacher?.id}>
                         {teacher?.first_name} {teacher?.last_name}
                       </SelectItem>
                     ))}

@@ -127,7 +127,8 @@ export type DayOfWeek =
   | 'Saturday';
 
 export interface Timetable {
-  id: string;
+  id?: string;
+  timetable_id?: string;
   day_of_week: DayOfWeek;
   period: number;
   section_id: string;
@@ -135,6 +136,12 @@ export interface Timetable {
   teacher_id: string;
   created_at: string;
   updated_at: string;
+}
+
+// API response wrapper for timetable
+export interface TimetableResponse {
+  id: string;
+  timeTable: Timetable;
 }
 
 // Store interface

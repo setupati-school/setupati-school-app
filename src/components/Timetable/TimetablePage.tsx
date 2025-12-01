@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
-import { Timetable, DayOfWeek } from '@/types/schoolStoreType';
+import { Timetable, TimetableResponse, DayOfWeek } from '@/types/schoolStoreType';
 import { BACKEND_URL } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { CreateTimetableForm } from './CreateTimetableForm';
@@ -37,18 +36,22 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
+import {getAuthToken} from '@/lib/utils';
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
-};
+// Period configuration with times
+const PERIODS = [
+  { period: 1, startTime: '9:00 AM', endTime: '9:45 AM' },
+  { period: 2, startTime: '9:45 AM', endTime: '10:30 AM' },
+  { period: 3, startTime: '10:30 AM', endTime: '11:15 AM' },
+  { period: 4, startTime: '11:15 AM', endTime: '12:00 PM' },
+  { period: 5, startTime: '12:45 PM', endTime: '1:30 PM' },
+  { period: 6, startTime: '1:30 PM', endTime: '2:15 PM' },
+  { period: 7, startTime: '2:15 PM', endTime: '3:00 PM' },
+  { period: 8, startTime: '3:00 PM', endTime: '3:45 PM' }
+];
+
 
 export const TimetablePage: React.FC = () => {
   const { toast } = useToast();
@@ -69,9 +72,9 @@ export const TimetablePage: React.FC = () => {
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editingTimetable, setEditingTimetable] = useState<Timetable | null>(null);
+  const [editingTimetable, setEditingTimetable] = useState<TimetableResponse | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [timetableToDelete, setTimetableToDelete] = useState<Timetable | null>(null);
+  const [timetableToDelete, setTimetableToDelete] = useState<TimetableResponse | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Fetch all timetables
@@ -85,7 +88,13 @@ export const TimetablePage: React.FC = () => {
       });
 
       const data = response.data?.timetables || response.data || [];
-      setTimetables(Array.isArray(data) ? data : []);
+      const timetablesData = Array.isArray(data)
+        ? data.map((item: { id: string; timetable?: Record<string, unknown> }) => ({
+            id: item.id,
+            ...(item.timetable || item)
+          }))
+        : [];
+      setTimetables(timetablesData);
     } catch (error) {
       console.error('Error fetching timetables:', error);
       toast({
@@ -213,45 +222,48 @@ export const TimetablePage: React.FC = () => {
   // Filter sections by selected grade
   const filteredSections = useMemo(() => {
     if (selectedGrade === 'all') return sections;
-    return sections.filter(s => s.grade_id === selectedGrade);
+    const section = sections.filter(s => s.grade_id === selectedGrade);
+    return section;
   }, [sections, selectedGrade]);
 
   // Filter timetables by selected section
   const filteredTimetables = useMemo(() => {
     if (selectedSection === 'all') return timetables;
-    return timetables.filter(t => t.section_id === selectedSection);
+    const filtered = timetables.filter(t => t?.timeTable?.section_id === selectedSection);
+    return filtered;
   }, [timetables, selectedSection]);
     
 
   // Get helper functions
   const getSectionName = (sectionId: string) => {
-    const section = sections.find(s => s.id === sectionId);
+    const section = sections.find(s => s.section_id === sectionId || s.id === sectionId);
     if (!section) return 'Unknown Section';
-    const grade = grades.find(g => g.id === section.grade_id);
+    const grade = grades.find(g => g.id === section.grade_id || g.grade_id === section.grade_id);
     return `${grade?.grade_name || ''} - ${section.section_name}`;
   };
 
   const getSubjectName = (subjectId: string) => {
-    const subject = subjects.find(s => s.id === subjectId);
+    const subject = subjects.find(s => s.subject_id === subjectId);
     return subject?.subject_name || 'Unknown Subject';
   };
 
   const getTeacherName = (teacherId: string) => {
-    const teacher = teachers.find(t => t.id === teacherId);
+    const teacher = teachers.find(t => t.teacher_id === teacherId);
     return teacher ? `${teacher.first_name} ${teacher.last_name}` : 'Unknown Teacher';
   };
 
   // Get timetable entry for a specific day and period
   const getTimetableEntry = (day: DayOfWeek, period: number): Timetable | undefined => {
-    return filteredTimetables.find(t => t.day_of_week === day && t.period === period);
+    const filteredTimetable =  filteredTimetables.find(t => t?.timeTable?.day_of_week === day && t?.timeTable?.period === period);
+    return filteredTimetable;
   };
 
-  const handleEdit = (timetable: Timetable) => {
+  const handleEdit = (timetable: TimetableResponse) => {
     setEditingTimetable(timetable);
     setCreateModalOpen(true);
   };
 
-  const handleDeleteClick = (timetable: Timetable) => {
+  const handleDeleteClick = (timetable: TimetableResponse) => {
     setTimetableToDelete(timetable);
     setDeleteDialogOpen(true);
   };
@@ -283,7 +295,7 @@ export const TimetablePage: React.FC = () => {
       }
 
       await axios.delete(
-        `${BACKEND_URL}/timetables/delete/${timetableToDelete.id}`,
+        `${BACKEND_URL}/timetables/delete/${timetableToDelete?.timeTable?.timetable_id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -488,7 +500,7 @@ export const TimetablePage: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
               <span>
-                Timetable for{' '}
+                {' '}Timetable for Section{' '}
                 <span className="text-primary">{getSectionName(selectedSection)}</span>
               </span>
             </CardTitle>
@@ -501,31 +513,36 @@ export const TimetablePage: React.FC = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="border p-3 text-left font-semibold text-sm">Period</th>
-                    {DAYS_OF_WEEK.map((day) => (
-                      <th key={day} className="border p-3 text-center font-semibold text-sm min-w-[140px]">
-                        {day}
+                    <th className="border p-3 text-left font-semibold text-sm min-w-[100px]">Day</th>
+                    {PERIODS.map((p) => (
+                      <th key={p.period} className="border p-2 text-center font-semibold text-sm min-w-[120px]">
+                        <div className="flex flex-col gap-1">
+                          <span>Period {p.period}</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {p.startTime} - {p.endTime}
+                          </span>
+                        </div>
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {PERIODS.map((period) => (
-                    <tr key={period} className="hover:bg-muted/30">
-                      <td className="border p-3 font-medium text-center bg-muted/20">
-                        {period}
+                  {DAYS_OF_WEEK.map((day) => (
+                    <tr key={day} className="hover:bg-muted/30">
+                      <td className="border p-3 font-medium bg-muted/20">
+                        {day}
                       </td>
-                      {DAYS_OF_WEEK.map((day) => {
-                        const entry = getTimetableEntry(day, period);
+                      {PERIODS.map((p) => {
+                        const entry = getTimetableEntry(day, p.period);
                         return (
-                          <td key={`${day}-${period}`} className="border p-2">
+                          <td key={`${day}-${p.period}`} className="border p-2">
                             {entry ? (
-                              <div className="bg-primary/10 rounded-lg p-2 min-h-[80px] relative group">
+                              <div className="bg-primary/10 rounded-lg p-2 min-h-[70px] relative group">
                                 <div className="font-medium text-sm text-primary">
-                                  {getSubjectName(entry.subject_id)}
+                                   {getSubjectName(entry?.timeTable?.subject_id)}
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {getTeacherName(entry.teacher_id)}
+                                   ~ {getTeacherName(entry?.timeTable?.teacher_id)}
                                 </div>
                                 {isAdmin && (
                                   <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -549,7 +566,7 @@ export const TimetablePage: React.FC = () => {
                                 )}
                               </div>
                             ) : (
-                              <div className="min-h-[80px] flex items-center justify-center text-muted-foreground text-xs">
+                              <div className="min-h-[70px] flex items-center justify-center text-muted-foreground text-xs">
                                 {isAdmin ? (
                                   <Button
                                     variant="ghost"
@@ -558,13 +575,15 @@ export const TimetablePage: React.FC = () => {
                                     onClick={() => {
                                       setEditingTimetable({
                                         id: '',
-                                        day_of_week: day,
-                                        period: period,
-                                        section_id: selectedSection,
-                                        subject_id: '',
-                                        teacher_id: '',
-                                        created_at: '',
-                                        updated_at: ''
+                                        timeTable: {
+                                          day_of_week: day,
+                                          period: p.period,
+                                          section_id: selectedSection,
+                                          subject_id: '',
+                                          teacher_id: '',
+                                          created_at: '',
+                                          updated_at: ''
+                                        }
                                       });
                                       setCreateModalOpen(true);
                                     }}
@@ -593,7 +612,7 @@ export const TimetablePage: React.FC = () => {
       <CreateTimetableForm
         open={createModalOpen}
         onOpenChange={handleCreateModalClose}
-        timetable={editingTimetable}
+        timetable={editingTimetable?.timeTable || null}
         onSuccess={handleCreateSuccess}
         preSelectedSection={selectedSection !== 'all' ? selectedSection : undefined}
         preSelectedGrade={selectedGrade !== 'all' ? selectedGrade : undefined}
@@ -606,8 +625,8 @@ export const TimetablePage: React.FC = () => {
             <AlertDialogTitle>Delete Timetable Entry</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this timetable entry for{' '}
-              {timetableToDelete && getSubjectName(timetableToDelete.subject_id)} on{' '}
-              {timetableToDelete?.day_of_week}, Period {timetableToDelete?.period}?
+              {timetableToDelete?.timeTable && getSubjectName(timetableToDelete?.timeTable?.subject_id)} on{' '}
+              {timetableToDelete?.timeTable?.day_of_week}, Period {timetableToDelete?.timeTable?.period}?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

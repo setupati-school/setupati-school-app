@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
-import { getAuth } from 'firebase/auth';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BACKEND_URL } from '@/lib/utils';
 import { Circular } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
-import {getAuthToken} from '@lib/utils';
+import {getAuthToken} from '@/lib/utils';
 
 const circularSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title is too long'),
