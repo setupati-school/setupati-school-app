@@ -96,14 +96,14 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
   // Filter sections by selected grade using grade's section_ids
   const filteredSections = useMemo(() => {
     if (!selectedGradeId) return sections;
-    const selectedGradeData = grades.find(g => g.id === selectedGradeId);
-    if (!selectedGradeData?.section_ids?.length) return [];
-    return sections.filter(s => selectedGradeData.section_ids.includes(s.id));
+    const selectedGradeData = grades.find(g => g.grade_id === selectedGradeId);
+    if (!selectedGradeData?.section_id?.length) return [];
+    return sections.filter(s => selectedGradeData.section_id.includes(s.section_id));
   }, [sections, grades, selectedGradeId]);
 
   // Get grade_id from selected section
   const selectedSection = useMemo(() => {
-    return sections.find(s => s.id === watchedSectionId);
+    return sections.find(s => s.section_id === watchedSectionId);
   }, [sections, watchedSectionId]);
 
   // Filter subjects by grade using grade's subject_ids
@@ -274,7 +274,7 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       {filteredSections.map((section) => (
-                        <SelectItem key={section?.id} value={section?.id}>
+                        <SelectItem key={section?.section_id} value={section?.section_id}>
                           {section?.section_name}
                         </SelectItem>
                       ))}

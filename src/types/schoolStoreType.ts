@@ -50,6 +50,7 @@ export interface Student {
 
 export interface Subject {
   id: string;
+  subject_id?: string;
   subject_name: string;
   grade_id: string;
   teacher_id?: string;
@@ -70,11 +71,13 @@ export interface Section {
 
 export interface Grade {
   id: string;
+  grade_id?: string;
   grade_name: string;
   section_ids: string[];
   subject_ids: string[];
   subject_name: string[];
   ahm_staff_id: string;
+  teacher_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -115,7 +118,13 @@ export interface Homework {
   updated_at: string;
 }
 
-export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
+export type DayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday';
 
 export interface Timetable {
   id: string;

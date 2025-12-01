@@ -212,6 +212,7 @@ export const TimetablePage: React.FC = () => {
 
   // Filter sections by selected grade
   const filteredSections = useMemo(() => {
+    console.log("filteredsections",selectedGrade,sections);
     if (selectedGrade === 'all') return sections;
     return sections.filter(s => s.grade_id === selectedGrade);
   }, [sections, selectedGrade]);
@@ -433,7 +434,7 @@ export const TimetablePage: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Grades</SelectItem>
                   {grades.map((grade) => (
-                    <SelectItem key={grade?.id} value={grade?.id}>
+                    <SelectItem key={grade?.grade_id} value={grade?.grade_id}>
                       {grade?.grade_name}
                     </SelectItem>
                   ))}
@@ -451,8 +452,8 @@ export const TimetablePage: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Sections</SelectItem>
                   {filteredSections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.section_name}
+                    <SelectItem key={section?.section_id} value={section?.section_id}>
+                      {section?.section_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

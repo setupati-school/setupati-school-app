@@ -47,7 +47,7 @@ export const SubjectCard: React.FC<SubjectCardProps> = ({
             className="bg-blue-500/10 text-blue-600 border-blue-500/20"
           >
             <GraduationCap className="h-3 w-3 mr-1" />
-            {getGradeName(subject.grade_id || '', grades)}
+            {getGradeName(subject?.grade_id || '', grades)}
           </Badge>
         </div>
 

@@ -21,9 +21,10 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/text-area';
 import { useToast } from '@/hooks/use-toast';
 import { BACKEND_URL } from '@/lib/utils';
-import { Subject, Grade } from '@/types/schoolStoreType';
+import { Subject, Grade, Teacher } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
 
 const subjectSchema = z.object({
@@ -31,7 +32,9 @@ const subjectSchema = z.object({
     .string()
     .min(1, 'Subject name is required')
     .max(100, 'Subject name is too long'),
-  grade_id: z.string().min(1, 'Please select a grade')
+  grade_id: z.string().min(1, 'Please select a grade'),
+  teacher_id: z.string().min(1, 'Please select a teacher'),
+  description: z.string().optional()
 });
 
 type SubjectFormData = z.infer<typeof subjectSchema>;
@@ -51,6 +54,7 @@ interface CreateSubjectFormProps {
   onOpenChange: (open: boolean) => void;
   subject?: Subject | null;
   grades: Grade[];
+  teachers: Teacher[];
   onSuccess: () => void;
 }
 
@@ -59,6 +63,7 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
   onOpenChange,
   subject,
   grades,
+  teachers,
   onSuccess
 }) => {
   const { toast } = useToast();
@@ -75,7 +80,9 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
     resolver: zodResolver(subjectSchema),
     defaultValues: {
       subject_name: '',
-      grade_id: ''
+      grade_id: '',
+      teacher_id: '',
+      description: ''
     }
   });
 
@@ -83,12 +90,16 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
     if (subject) {
       reset({
         subject_name: subject.subject_name,
-        grade_id: subject.grade_id
+        grade_id: subject.grade_id,
+        teacher_id: subject.teacher_id || '',
+        description: subject.description || ''
       });
     } else {
       reset({
         subject_name: '',
-        grade_id: ''
+        grade_id: '',
+        teacher_id: '',
+        description: ''
       });
     }
   }, [subject, reset, open]);
@@ -115,7 +126,10 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       };
 
       const payload = {
-        ...data
+        subject_name: data.subject_name,
+        grade_id: data.grade_id,
+        teacher_id: data.teacher_id,
+        description: data.description || null
       };
 
       if (isEditing && subject) {
@@ -143,7 +157,10 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       onSuccess();
     } catch (err: unknown) {
       const axiosError = err as {
-        response?: { status?: number; data?: { message?: string; error?: string } };
+        response?: {
+          status?: number;
+          data?: { message?: string; error?: string };
+        };
       };
 
       if (axiosError.response?.status === 401) {
@@ -203,7 +220,10 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
               control={control}
               name="grade_id"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? ''}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
@@ -220,6 +240,51 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
             {errors.grade_id && (
               <p className="text-sm text-destructive">
                 {errors.grade_id.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Teacher *</Label>
+            <Controller
+              control={control}
+              name="teacher_id"
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? ''}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select teacher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teachers.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.first_name} {teacher.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.teacher_id && (
+              <p className="text-sm text-destructive">
+                {errors.teacher_id.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Enter subject description (optional)"
+              {...register('description')}
+              rows={3}
+            />
+            {errors.description && (
+              <p className="text-sm text-destructive">
+                {errors.description.message}
               </p>
             )}
           </div>
