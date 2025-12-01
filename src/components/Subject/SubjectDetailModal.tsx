@@ -20,7 +20,7 @@ interface SubjectDetailModalProps {
 }
 
 const getGradeName = (gradeId: string, grades: Grade[]): string => {
-  const grade = grades.find((g) => g.id === gradeId);
+  const grade = grades.find((g) => g?.grade_id === gradeId);
   return grade?.grade_name || 'Unknown Grade';
 };
 
@@ -39,7 +39,7 @@ export const SubjectDetailModal: React.FC<SubjectDetailModalProps> = ({
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="text-xl font-semibold pr-8 flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-              {subject.subject_name || 'Unnamed Subject'}
+              {subject?.subject_name || 'Unnamed Subject'}
             </DialogTitle>
           </div>
           <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -48,7 +48,7 @@ export const SubjectDetailModal: React.FC<SubjectDetailModalProps> = ({
               className="bg-blue-500/10 text-blue-600 border-blue-500/20"
             >
               <GraduationCap className="h-3 w-3 mr-1" />
-              {getGradeName(subject.grade_id || '', grades)}
+              {getGradeName(subject?.grade_id || '', grades)}
             </Badge>
           </div>
         </DialogHeader>
@@ -64,7 +64,7 @@ export const SubjectDetailModal: React.FC<SubjectDetailModalProps> = ({
                 <BookOpen className="h-4 w-4" />
                 <span>Subject Name</span>
               </div>
-              <p className="text-sm font-medium">{subject.subject_name || 'Unnamed Subject'}</p>
+              <p className="text-sm font-medium">{subject?.subject_name || 'Unnamed Subject'}</p>
             </div>
 
             <div className="space-y-1">
@@ -73,18 +73,18 @@ export const SubjectDetailModal: React.FC<SubjectDetailModalProps> = ({
                 <span>Grade</span>
               </div>
               <p className="text-sm font-medium">
-                {getGradeName(subject.grade_id || '', grades)}
+                {getGradeName(subject?.grade_id || '', grades)}
               </p>
             </div>
 
-            {subject.created_at && (
+            {subject?.created_at && (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>Created</span>
                 </div>
                 <p className="text-sm font-medium">
-                  {new Date(subject.created_at).toLocaleDateString('en-US', {
+                  {new Date(subject?.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -100,7 +100,7 @@ export const SubjectDetailModal: React.FC<SubjectDetailModalProps> = ({
                   <span>Last Updated</span>
                 </div>
                 <p className="text-sm font-medium">
-                  {new Date(subject.updated_at).toLocaleDateString('en-US', {
+                  {new Date(subject?.updated_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'

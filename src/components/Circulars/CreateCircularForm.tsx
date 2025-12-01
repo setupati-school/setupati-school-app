@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BACKEND_URL } from '@/lib/utils';
 import { Circular } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
+import {getAuthToken} from '@lib/utils';
 
 const circularSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title is too long'),
@@ -42,16 +43,6 @@ const circularSchema = z.object({
 });
 
 type CircularFormData = z.infer<typeof circularSchema>;
-
-// Helper function to get auth token
-const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
-};
 
 interface CreateCircularFormProps {
   open: boolean;
@@ -91,16 +82,16 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
   useEffect(() => {
     if (circular) {
       reset({
-        title: circular.title,
-        description: circular.description,
-        issued_by: circular.issued_by,
-        targeted_group: circular.targeted_group as
+        title: circular?.title,
+        description: circular?.description,
+        issued_by: circular?.issued_by,
+        targeted_group: circular?.targeted_group as
           | 'All'
           | 'Students'
           | 'Teachers'
           | 'Parents',
-        issued_date: circular.issued_date.split('T')[0],
-        valid_until: circular.valid_until.split('T')[0]
+        issued_date: circular?.issued_date.split('T')[0],
+        valid_until: circular?.valid_until.split('T')[0]
       });
     } else {
       reset({
@@ -137,12 +128,12 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
 
       const payload = {
         ...data,
-        issued_date: new Date(data.issued_date).toISOString(),
-        valid_until: new Date(data.valid_until).toISOString()
+        issued_date: new Date(data?.issued_date).toISOString(),
+        valid_until: new Date(data?.valid_until).toISOString()
       };
 
       if (isEditing && circular) {
-        await axios.put(`${BACKEND_URL}/circulars/update/${circular.id}`, payload, {
+        await axios.put(`${BACKEND_URL}/circulars/update/${circular?.id}`, payload, {
           headers
         });
         toast({
@@ -209,8 +200,8 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
               placeholder="Enter circular title"
               {...register('title')}
             />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
+            {errors?.title && (
+              <p className="text-sm text-destructive">{errors?.title?.message}</p>
             )}
           </div>
 
@@ -222,9 +213,9 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
               className="min-h-[120px]"
               {...register('description')}
             />
-            {errors.description && (
+            {errors?.description && (
               <p className="text-sm text-destructive">
-                {errors.description.message}
+                {errors?.description?.message}
               </p>
             )}
           </div>
@@ -237,9 +228,9 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
                 placeholder="e.g. Principal, Admin Office"
                 {...register('issued_by')}
               />
-              {errors.issued_by && (
+              {errors?.issued_by && (
                 <p className="text-sm text-destructive">
-                  {errors.issued_by.message}
+                  {errors?.issued_by?.message}
                 </p>
               )}
             </div>
@@ -266,9 +257,9 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
                   </Select>
                 )}
               />
-              {errors.targeted_group && (
+              {errors?.targeted_group && (
                 <p className="text-sm text-destructive">
-                  {errors.targeted_group.message}
+                  {errors?.targeted_group?.message}
                 </p>
               )}
             </div>
@@ -278,9 +269,9 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="issued_date">Issue Date *</Label>
               <Input id="issued_date" type="date" {...register('issued_date')} />
-              {errors.issued_date && (
+              {errors?.issued_date && (
                 <p className="text-sm text-destructive">
-                  {errors.issued_date.message}
+                  {errors?.issued_date?.message}
                 </p>
               )}
             </div>
@@ -292,9 +283,9 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
                 type="date"
                 {...register('valid_until')}
               />
-              {errors.valid_until && (
+              {errors?.valid_until && (
                 <p className="text-sm text-destructive">
-                  {errors.valid_until.message}
+                  {errors?.valid_until?.message}
                 </p>
               )}
             </div>

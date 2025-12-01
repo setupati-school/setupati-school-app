@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,16 +48,7 @@ import {
   Calendar,
   Clock
 } from 'lucide-react';
-
-// Helper function to get auth token
-const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
-};
+import {getAuthToken} from '@/lib/utils';
 
 export const SubjectsPage: React.FC = () => {
   const { toast } = useToast();
@@ -69,7 +59,6 @@ export const SubjectsPage: React.FC = () => {
     setGrades,
     teachers,
     setTeachers,
-    sections,
     setSections
   } = useSchoolStore();
   const { role } = useAuthStore();
@@ -104,7 +93,7 @@ export const SubjectsPage: React.FC = () => {
         }
       });
 
-      const data = response.data?.subjects || response.data || [];
+      const data = response?.data?.subjects || response?.data || [];
       setSubjects(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching subjects:', error);
@@ -122,7 +111,7 @@ export const SubjectsPage: React.FC = () => {
         }
       });
 
-      const data = response.data?.teachers || response.data || [];
+      const data = response?.data?.teachers || response?.data || [];
       setTeachers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching teachers:', error);
@@ -140,7 +129,7 @@ export const SubjectsPage: React.FC = () => {
         }
       });
 
-      const data = response.data?.sections || response.data || [];
+      const data = response?.data?.sections || response?.data || [];
       setSections(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching sections:', error);
@@ -159,11 +148,10 @@ export const SubjectsPage: React.FC = () => {
         }
       });
 
-      const data = response.data?.grades || response.data || [];
+      const data = response?.data?.grades || response?.data || [];
       const gradesData: Grade[] = Array.isArray(data)
         ? data.map((item: { id: string; grade?: Grade }) => ({
-            id: item.id,
-            ...(item.grade || item)
+            ...(item?.grade || item)
           }))
         : [];
 
@@ -199,16 +187,16 @@ export const SubjectsPage: React.FC = () => {
     return 'Not Assigned';
   };
 
-  // Handle grade click - get subjects from grade's subject_name array
+  // Handle grade click
   const handleGradeClick = (grade: Grade) => {
     setSelectedGrade(grade);
     setLoadingSubjects(true);
 
-    // Get subjects that match the grade's subject_id array
-    const subjectIds = grade?.subject_id || [];
+    const gradeId = grade?.grade_id || '';
     const matchedSubjects = subjects.filter((subject) =>
-      subjectIds.includes(subject?.subject_id)
-    );
+    subject?.grade_id === gradeId);
+
+    setGradeSubjects(matchedSubjects);
 
     setGradeSubjects(matchedSubjects);
     setLoadingSubjects(false);
@@ -289,14 +277,14 @@ export const SubjectsPage: React.FC = () => {
         const payload = {
           subject_id: subjectId,
           subject_name: subjectName,
-          grade_id: editingSubject.grade_id || selectedGrade?.id || '',
+          grade_id: editingSubject?.grade_id || selectedGrade?.grade_id || '',
           teacher_id: subjectTeacherId,
           description: subjectDescription || null,
           updated_at: now
         };
 
         await axios.put(
-          `${BACKEND_URL}/subjects/update/${editingSubject.id}`,
+          `${BACKEND_URL}/subjects/update/${editingSubject?.id}`,
           payload,
           { headers }
         );
@@ -308,16 +296,16 @@ export const SubjectsPage: React.FC = () => {
         // Update local state immediately
         const updatedSubject = { ...editingSubject, ...payload };
         setSubjects((prev) =>
-          prev.map((s) => (s.subject_id === editingSubject.subject_id ? updatedSubject : s))
+          prev.map((s) => (s?.subject_id === editingSubject?.subject_id ? updatedSubject : s))
         );
         setGradeSubjects((prev) =>
-          prev.map((s) => (s.subject_id === editingSubject.subject_id ? updatedSubject : s))
+          prev.map((s) => (s?.subject_id === editingSubject?.subject_id ? updatedSubject : s))
         );
       } else {
         const payload = {
           subject_id: subjectId,
           subject_name: subjectName,
-          grade_id: selectedGrade?.id || '',
+          grade_id: selectedGrade?.grade_id || '',
           teacher_id: subjectTeacherId,
           description: subjectDescription || null,
           created_at: now,
@@ -333,14 +321,14 @@ export const SubjectsPage: React.FC = () => {
         );
 
         // Add new subject to local state immediately
-        const newSubject = response.data?.subject ||
-          response.data || { ...payload, id: response.data?.id };
+        const newSubject = response?.data?.subject ||
+          response?.data || { ...payload, id: response?.data?.id };
         setSubjects((prev) => [...prev, newSubject]);
 
         // Update the grade to include the new subject name
         if (selectedGrade) {
           const updatedSubjectNames = [
-            ...(selectedGrade.subject_name || []),
+            ...(selectedGrade?.subject_name || []),
             subjectName
           ];
 
@@ -351,7 +339,7 @@ export const SubjectsPage: React.FC = () => {
           };
 
           await axios.put(
-            `${BACKEND_URL}/grades/update/${selectedGrade.grade_name}`,
+            `${BACKEND_URL}/grades/update/${selectedGrade?.grade_name}`,
             gradePayload,
             { headers }
           );
@@ -362,7 +350,7 @@ export const SubjectsPage: React.FC = () => {
             subject_name: updatedSubjectNames
           };
           setGrades((prev) =>
-            prev.map((g) => (g.id === selectedGrade.id ? updatedGrade : g))
+            prev.map((g) => (g.grade_id === selectedGrade?.grade_id ? updatedGrade : g))
           );
           setSelectedGrade(updatedGrade);
 
@@ -402,7 +390,7 @@ export const SubjectsPage: React.FC = () => {
     try {
       const token = await getAuthToken();
       await axios.delete(
-        `${BACKEND_URL}/subjects/delete/${subjectToDelete.id}`,
+        `${BACKEND_URL}/subjects/delete/${subjectToDelete?.id}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -412,7 +400,7 @@ export const SubjectsPage: React.FC = () => {
 
       // Update local state immediately
       const updatedSubjects = subjects.filter(
-        (s) => s.subject_id !== subjectToDelete.subject_id
+        (s) => s?.subject_id !== subjectToDelete?.subject_id
       );
       setSubjects(updatedSubjects);
 
@@ -638,36 +626,45 @@ export const SubjectsPage: React.FC = () => {
           </Card>
 
           {/* Grades Grid */}
-          {grades.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {grades.map((grade) => (
-                <Card
-                  key={grade?.grade_id}
-                  className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer hover:border-primary group"
-                  onClick={() => handleGradeClick(grade)}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <GraduationCap className="h-5 w-5 text-primary" />
-                      {grade?.grade_name || 'Unnamed Grade'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary">
-                        <BookOpen className="h-3 w-3 mr-1" />
-                        {(grade?.subject_id || []).length} subject
-                        {(grade?.subject_id || []).length !== 1 ? 's' : ''}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        Click to view
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
+ {grades.length > 0 ? (
+  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {
+          grades.map((grade) => {
+            // Calculate subjects for this specific grade
+            const gradeId = grade?.grade_id || '';
+            const matchedSubjects = subjects.filter((subject) =>
+              subject?.grade_id === gradeId
+            );
+
+            return (
+              <Card
+                key={grade?.grade_id}
+                className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer hover:border-primary group"
+                onClick={() => handleGradeClick(grade)}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    {grade?.grade_name || 'Unnamed Grade'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      {matchedSubjects.length} subject
+                      {matchedSubjects.length !== 1 ? 's' : ''}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Click to view
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
             <Card className="shadow-soft">
               <CardContent className="py-12">
                 <div className="text-center">

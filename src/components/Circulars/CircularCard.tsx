@@ -39,7 +39,7 @@ export const CircularCard: React.FC<CircularCardProps> = ({
   onEdit,
   onDelete
 }) => {
-  const expired = isExpired(circular.valid_until);
+  const expired = isExpired(circular?.valid_until || '');
 
   return (
     <Card
@@ -51,30 +51,30 @@ export const CircularCard: React.FC<CircularCardProps> = ({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base font-semibold line-clamp-2 flex-1">
-            {circular.title}
+            {circular?.title}
           </CardTitle>
           <Badge
             variant="outline"
-            className={`shrink-0 ${getTargetGroupColor(circular.targeted_group)}`}
+            className={`shrink-0 ${getTargetGroupColor(circular?.targeted_group)}`}
           >
             <Users className="h-3 w-3 mr-1" />
-            {circular.targeted_group}
+            {circular?.targeted_group}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground line-clamp-3">
-          {circular.description}
+          {circular?.description}
         </p>
 
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            <span>{circular.issued_by}</span>
+            <span>{circular?.issued_by}</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{new Date(circular.issued_date).toLocaleDateString()}</span>
+            <span>{new Date(circular?.issued_date || '').toLocaleDateString()}</span>
           </div>
         </div>
 
@@ -86,7 +86,7 @@ export const CircularCard: React.FC<CircularCardProps> = ({
               </Badge>
             ) : (
               <Badge variant="outline" className="text-xs">
-                Valid until {new Date(circular.valid_until).toLocaleDateString()}
+                Valid until {new Date(circular?.valid_until || '').toLocaleDateString()}
               </Badge>
             )}
           </div>

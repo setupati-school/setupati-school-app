@@ -212,7 +212,6 @@ export const TimetablePage: React.FC = () => {
 
   // Filter sections by selected grade
   const filteredSections = useMemo(() => {
-    console.log("filteredsections",selectedGrade,sections);
     if (selectedGrade === 'all') return sections;
     return sections.filter(s => s.grade_id === selectedGrade);
   }, [sections, selectedGrade]);

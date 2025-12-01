@@ -3,7 +3,6 @@ import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BACKEND_URL } from '@/lib/utils';
 import { Subject, Grade, Teacher } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
+import {getAuthToken} from '@lib/utils';
 
 const subjectSchema = z.object({
   subject_name: z
@@ -38,16 +38,6 @@ const subjectSchema = z.object({
 });
 
 type SubjectFormData = z.infer<typeof subjectSchema>;
-
-// Helper function to get auth token
-const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
-};
 
 interface CreateSubjectFormProps {
   open: boolean;
@@ -89,10 +79,10 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
   useEffect(() => {
     if (subject) {
       reset({
-        subject_name: subject.subject_name,
-        grade_id: subject.grade_id,
-        teacher_id: subject.teacher_id || '',
-        description: subject.description || ''
+        subject_name: subject?.subject_name,
+        grade_id: subject?.grade_id,
+        teacher_id: subject?.teacher_id || '',
+        description: subject?.description || ''
       });
     } else {
       reset({
@@ -126,15 +116,15 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       };
 
       const payload = {
-        subject_name: data.subject_name,
-        grade_id: data.grade_id,
-        teacher_id: data.teacher_id,
-        description: data.description || null
+        subject_name: data?.subject_name,
+        grade_id: data?.grade_id,
+        teacher_id: data?.teacher_id,
+        description: data?.description || null
       };
 
       if (isEditing && subject) {
         await axios.put(
-          `${BACKEND_URL}/subjects/update/${subject.id}`,
+          `${BACKEND_URL}/subjects/update/${subject?.id}`,
           payload,
           { headers }
         );
@@ -207,9 +197,9 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
               placeholder="Enter subject name"
               {...register('subject_name')}
             />
-            {errors.subject_name && (
+            {errors?.subject_name && (
               <p className="text-sm text-destructive">
-                {errors.subject_name.message}
+                {errors?.subject_name?.message}
               </p>
             )}
           </div>
@@ -222,24 +212,24 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
               render={({ field }) => (
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value ?? ''}
+                  value={field?.value ?? ''}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
                   <SelectContent>
                     {grades.map((grade) => (
-                      <SelectItem key={grade.id} value={grade.id}>
-                        {grade.grade_name}
+                      <SelectItem key={grade?.grade_id} value={grade?.grade_id}>
+                        {grade?.grade_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
             />
-            {errors.grade_id && (
+            {errors?.grade_id && (
               <p className="text-sm text-destructive">
-                {errors.grade_id.message}
+                {errors?.grade_id?.message}
               </p>
             )}
           </div>
@@ -252,24 +242,24 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
               render={({ field }) => (
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value ?? ''}
+                  value={field?.value ?? ''}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select teacher" />
                   </SelectTrigger>
                   <SelectContent>
                     {teachers.map((teacher) => (
-                      <SelectItem key={teacher.id} value={teacher.id}>
-                        {teacher.first_name} {teacher.last_name}
+                      <SelectItem key={teacher?.teacher_id} value={teacher?.teacher_id}>
+                        {teacher?.first_name} {teacher?.last_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
             />
-            {errors.teacher_id && (
+            {errors?.teacher_id && (
               <p className="text-sm text-destructive">
-                {errors.teacher_id.message}
+                {errors?.teacher_id?.message}
               </p>
             )}
           </div>
@@ -282,9 +272,9 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
               {...register('description')}
               rows={3}
             />
-            {errors.description && (
+            {errors?.description && (
               <p className="text-sm text-destructive">
-                {errors.description.message}
+                {errors?.description?.message}
               </p>
             )}
           </div>

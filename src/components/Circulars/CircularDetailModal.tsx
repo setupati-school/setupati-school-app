@@ -44,7 +44,7 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
 }) => {
   if (!circular) return null;
 
-  const expired = isExpired(circular.valid_until);
+  const expired = isExpired(circular?.valid_until || '');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,16 +52,16 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="text-xl font-semibold pr-8">
-              {circular.title}
+              {circular?.title}
             </DialogTitle>
           </div>
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <Badge
               variant="outline"
-              className={getTargetGroupColor(circular.targeted_group)}
+              className={getTargetGroupColor(circular?.targeted_group || '')}
             >
               <Users className="h-3 w-3 mr-1" />
-              {circular.targeted_group}
+              {circular?.targeted_group}
             </Badge>
             {expired ? (
               <Badge variant="destructive">Expired</Badge>
@@ -73,7 +73,7 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
 
         <div className="space-y-4 py-4">
           <DialogDescription className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-            {circular.description}
+            {circular?.description}
           </DialogDescription>
 
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
@@ -82,7 +82,7 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
                 <User className="h-4 w-4" />
                 <span>Issued By</span>
               </div>
-              <p className="text-sm font-medium">{circular.issued_by}</p>
+              <p className="text-sm font-medium">{circular?.issued_by}</p>
             </div>
 
             <div className="space-y-1">
@@ -120,7 +120,7 @@ export const CircularDetailModal: React.FC<CircularDetailModalProps> = ({
                 <Users className="h-4 w-4" />
                 <span>Target Audience</span>
               </div>
-              <p className="text-sm font-medium">{circular.targeted_group}</p>
+              <p className="text-sm font-medium">{circular?.targeted_group}</p>
             </div>
           </div>
         </div>

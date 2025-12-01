@@ -41,19 +41,11 @@ import {
   Users,
   Calendar
 } from 'lucide-react';
+import { getAuthToken } from '@/lib/utils';
 
 type FilterGroup = 'all' | 'All' | 'Students' | 'Teachers' | 'Parents';
 type FilterStatus = 'all' | 'active' | 'expired';
 
-// Helper function to get auth token
-const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
-};
 
 export const CircularsPage: React.FC = () => {
   const { toast } = useToast();
@@ -91,10 +83,8 @@ export const CircularsPage: React.FC = () => {
         }
       });
 
-      console.log('Circulars response:', response.data);
-
       // Handle response format
-      const data = response.data?.circulars || response.data || [];
+      const data = response?.data?.circulars || response?.data || [];
       setCirculars(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching circulars:', error);
@@ -125,20 +115,20 @@ export const CircularsPage: React.FC = () => {
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           const matchesSearch =
-            circular.title?.toLowerCase().includes(query) ||
-            circular.description?.toLowerCase().includes(query) ||
-            circular.issued_by?.toLowerCase().includes(query);
+            circular?.title?.toLowerCase().includes(query) ||
+            circular?.description?.toLowerCase().includes(query) ||
+            circular?.issued_by?.toLowerCase().includes(query);
           if (!matchesSearch) return false;
         }
 
         // Group filter
         if (filterGroup !== 'all') {
-          if (circular.targeted_group !== filterGroup) return false;
+          if (circular?.targeted_group !== filterGroup) return false;
         }
 
         // Status filter
         if (filterStatus !== 'all') {
-          const expired = isExpired(circular.valid_until);
+          const expired = isExpired(circular?.valid_until || '');
           if (filterStatus === 'active' && expired) return false;
           if (filterStatus === 'expired' && !expired) return false;
         }
@@ -147,14 +137,14 @@ export const CircularsPage: React.FC = () => {
       })
       .sort(
         (a, b) =>
-          new Date(b.issued_date).getTime() - new Date(a.issued_date).getTime()
+          new Date(b?.issued_date).getTime() - new Date(a?.issued_date).getTime()
       );
   }, [circulars, searchQuery, filterGroup, filterStatus]);
 
   const stats = useMemo(() => {
     const total = circulars.length;
-    const active = circulars.filter((c) => !isExpired(c.valid_until)).length;
-    const expired = circulars.filter((c) => isExpired(c.valid_until)).length;
+    const active = circulars.filter((c) => !isExpired(c?.valid_until || '')).length;
+    const expired = circulars.filter((c) => isExpired(c?.valid_until || '')).length;
     return { total, active, expired };
   }, [circulars]);
 
@@ -201,15 +191,13 @@ export const CircularsPage: React.FC = () => {
       }
 
       await axios.delete(
-        `${BACKEND_URL}/circulars/delete/${circularToDelete.id}`,
+        `${BACKEND_URL}/circulars/delete/${circularToDelete?.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
           }
         }
       );
-
-      console.log('Circular deleted:', circularToDelete.id);
       toast({
         title: 'Success',
         description: 'Circular deleted successfully'
@@ -300,7 +288,7 @@ export const CircularsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{stats.total}</p>
+            <p className="text-2xl font-bold">{stats?.total}</p>
           </CardContent>
         </Card>
         <Card className="shadow-soft">
@@ -311,7 +299,7 @@ export const CircularsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+            <p className="text-2xl font-bold text-green-600">{stats?.active}</p>
           </CardContent>
         </Card>
         <Card className="shadow-soft">
@@ -322,7 +310,7 @@ export const CircularsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
+            <p className="text-2xl font-bold text-red-600">{stats?.expired}</p>
           </CardContent>
         </Card>
       </div>
@@ -336,7 +324,7 @@ export const CircularsPage: React.FC = () => {
               <Input
                 placeholder="Search circulars..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e?.target?.value)}
                 className="pl-10"
               />
             </div>
@@ -370,7 +358,7 @@ export const CircularsPage: React.FC = () => {
                   <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> 
           </div>
         </CardContent>
       </Card>
@@ -384,7 +372,7 @@ export const CircularsPage: React.FC = () => {
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredCirculars.map((circular) => (
             <CircularCard
-              key={circular.id}
+              key={circular?.id}
               circular={circular}
               isAdmin={isAdmin}
               onView={handleView}
