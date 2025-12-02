@@ -10,7 +10,7 @@ import {
 
 export const createTimeTable = async (req: Request, res: Response) => {
   try {
-    const data = req.body;
+    const data = req?.body || {};
     const id = await addTimeTable(data);
     res.status(201).json({ id });
   } catch (error) {
@@ -21,7 +21,7 @@ export const createTimeTable = async (req: Request, res: Response) => {
 
 export const searchTimeTable = async (req: Request, res: Response) => {
   try {
-    const { time_table_id: timeTableId } = req.params;
+    const { time_table_id: timeTableId } = req?.params || {};
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
@@ -38,7 +38,7 @@ export const deleteTimeTableDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { time_table_id: timeTableId } = req.params;
+    const { time_table_id: timeTableId } = req?.params || {};
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
@@ -66,11 +66,11 @@ export const getAllTimeTablesDetails = async (req: Request, res: Response) => {
 
 export const updateTimeTableDetails = async (req: Request, res: Response) => {
   try {
-    const { time_table_id: timeTableId } = req.params;
+    const { time_table_id: timeTableId } = req?.params || {};
     if (!timeTableId) {
       return res.status(400).json({ error: 'Time Table ID is required' });
     }
-    const data = req.body;
+    const data = req?.body || {};
     const updated = await updateTimeTable(timeTableId, data);
     if (!updated) {
       return res.status(404).json({ error: 'Time Table not found' });

@@ -15,7 +15,7 @@ interface CircularWithDates extends Record<string, unknown> {
 
 export const createCircular = async (req: Request, res: Response) => {
   try {
-    const data = req?.body;
+    const data = req?.body || {};
     const id = await addCircular(data);
     res.status(201).json({ id });
   } catch (error) {
@@ -26,7 +26,7 @@ export const createCircular = async (req: Request, res: Response) => {
 
 export const searchCircular = async (req: Request, res: Response) => {
   try {
-    const { circular_id: circularId } = req.params;
+    const { circular_id: circularId } = req?.params || {};
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
@@ -43,7 +43,7 @@ export const deleteCircularDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { circular_id: circularId } = req.params;
+    const { circular_id: circularId } = req?.params || {};
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
@@ -85,11 +85,11 @@ export const getAllCirculars = async (req: Request, res: Response) => {
 
 export const updateCircularDetails = async (req: Request, res: Response) => {
   try {
-    const { circular_id: circularId } = req.params;
+    const { circular_id: circularId } = req?.params || {};
     if (!circularId) {
       return res.status(400).json({ error: 'Circular ID is required' });
     }
-    const data = req.body;
+    const data = req?.body || {};
     const updated = await updateCircular(circularId, data);
     if (!updated) {
       return res.status(404).json({ error: 'Circular not found' });

@@ -17,7 +17,7 @@ interface SubjectWithDates extends Record<string, unknown> {
 
 export const createSubject = async (req: Request, res: Response) => {
   try {
-    const data = req.body;
+    const data = req?.body || {};
     const id = await addSubject(data);
     res.status(201).json({ id });
   } catch (error) {
@@ -28,7 +28,7 @@ export const createSubject = async (req: Request, res: Response) => {
 
 export const searchSubject = async (req: Request, res: Response) => {
   try {
-    const { subject_id: subjectId } = req.params;
+    const { subject_id: subjectId } = req?.params || {};
     if (!subjectId) {
       return res.status(400).json({ error: 'Subject ID is required' });
     }
@@ -45,7 +45,7 @@ export const deleteSubjectDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { subject_id: subjectId } = req.params;
+    const { subject_id: subjectId } = req?.params || {};
     if (!subjectId) {
       return res.status(400).json({ error: 'Subject ID is required' });
     }
@@ -88,11 +88,11 @@ export const getAllSubjects = async (req: Request, res: Response) => {
 
 export const updateSubjectDetails = async (req: Request, res: Response) => {
   try {
-    const { subject_id: subjectId } = req.params;
+    const { subject_id: subjectId } = req?.params || {};
     if (!subjectId) {
       return res.status(400).json({ error: 'Subject ID is required' });
     }
-    const data = req.body;
+    const data = req?.body || {};
     const updated = await updateSubject(subjectId, data);
     if (!updated) {
       return res.status(404).json({ error: 'Subject not found' });
