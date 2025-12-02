@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axiosConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,6 @@ import {
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
 import { Subject, Grade, Teacher, Section } from '@/types/schoolStoreType';
-import { BACKEND_URL } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
@@ -48,7 +47,6 @@ import {
   Calendar,
   Clock
 } from 'lucide-react';
-import {getAuthToken} from '@/lib/utils';
 
 export const SubjectsPage: React.FC = () => {
   const { toast } = useToast();
@@ -86,12 +84,7 @@ export const SubjectsPage: React.FC = () => {
   // Fetch all subjects
   const fetchSubjects = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/subjects/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/subjects/all');
 
       const data = response?.data?.subjects || response?.data || [];
       setSubjects(Array.isArray(data) ? data : []);
@@ -104,12 +97,7 @@ export const SubjectsPage: React.FC = () => {
   // Fetch all teachers
   const fetchTeachers = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/teachers/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/teachers/all');
 
       const data = response?.data?.teachers || response?.data || [];
       setTeachers(Array.isArray(data) ? data : []);
@@ -122,12 +110,7 @@ export const SubjectsPage: React.FC = () => {
   // Fetch all sections
   const fetchSections = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/sections/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/sections/all');
 
       const data = response?.data?.sections || response?.data || [];
       setSections(Array.isArray(data) ? data : []);
@@ -141,12 +124,7 @@ export const SubjectsPage: React.FC = () => {
   const fetchGrades = async () => {
     setLoading(true);
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/grades/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/grades/all');
 
       const data = response?.data?.grades || response?.data || [];
       const gradesData: Grade[] = Array.isArray(data)
@@ -158,11 +136,6 @@ export const SubjectsPage: React.FC = () => {
       setGrades(gradesData);
     } catch (error) {
       console.error('Error fetching grades:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load grades',
-        variant: 'destructive'
-      });
       setGrades([]);
     } finally {
       setLoading(false);
@@ -265,12 +238,6 @@ export const SubjectsPage: React.FC = () => {
 
     setSaving(true);
     try {
-      const token = await getAuthToken();
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       const now = new Date().toISOString();
 
       if (editingSubject) {
@@ -283,11 +250,7 @@ export const SubjectsPage: React.FC = () => {
           updated_at: now
         };
 
-        await axios.put(
-          `${BACKEND_URL}/subjects/update/${editingSubject?.id}`,
-          payload,
-          { headers }
-        );
+        await api.put(`/subjects/update/${editingSubject?.id}`, payload);
         toast({
           title: 'Success',
           description: 'Subject updated successfully'
@@ -312,13 +275,7 @@ export const SubjectsPage: React.FC = () => {
           updated_at: now
         };
 
-        const response = await axios.post(
-          `${BACKEND_URL}/subjects/create`,
-          payload,
-          {
-            headers
-          }
-        );
+        const response = await api.post('/subjects/create', payload);
 
         // Add new subject to local state immediately
         const newSubject = response?.data?.subject ||
@@ -338,11 +295,7 @@ export const SubjectsPage: React.FC = () => {
             updated_at: now
           };
 
-          await axios.put(
-            `${BACKEND_URL}/grades/update/${selectedGrade?.grade_name}`,
-            gradePayload,
-            { headers }
-          );
+          await api.put(`/grades/update/${selectedGrade?.grade_name}`, gradePayload);
 
           // Update grade in local state
           const updatedGrade = {
@@ -372,11 +325,6 @@ export const SubjectsPage: React.FC = () => {
       setSubjectDescription('');
     } catch (error) {
       console.error('Error saving subject:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save subject',
-        variant: 'destructive'
-      });
     } finally {
       setSaving(false);
     }
@@ -388,13 +336,7 @@ export const SubjectsPage: React.FC = () => {
 
     setSaving(true);
     try {
-      const token = await getAuthToken();
-      await axios.delete(
-        `${BACKEND_URL}/subjects/delete/${subjectToDelete?.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      await api.delete(`/subjects/delete/${subjectToDelete?.id}`);
 
       toast({ title: 'Success', description: 'Subject deleted successfully' });
 
@@ -413,11 +355,6 @@ export const SubjectsPage: React.FC = () => {
       setSubjectToDelete(null);
     } catch (error) {
       console.error('Error deleting subject:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete subject',
-        variant: 'destructive'
-      });
     } finally {
       setSaving(false);
     }

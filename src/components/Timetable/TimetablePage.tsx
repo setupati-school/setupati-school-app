@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import api from '@/lib/axiosConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +22,6 @@ import {
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
 import { Timetable, TimetableResponse, DayOfWeek } from '@/types/schoolStoreType';
-import { BACKEND_URL } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { CreateTimetableForm } from './CreateTimetableForm';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -36,7 +35,6 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import {getAuthToken} from '@/lib/utils';
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -80,12 +78,7 @@ export const TimetablePage: React.FC = () => {
   // Fetch all timetables
   const fetchTimetables = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/timetables/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/timetables/all');
 
       const data = response.data?.timetables || response.data || [];
       const timetablesData = Array.isArray(data)
@@ -97,11 +90,6 @@ export const TimetablePage: React.FC = () => {
       setTimetables(timetablesData);
     } catch (error) {
       console.error('Error fetching timetables:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load timetables',
-        variant: 'destructive'
-      });
       setTimetables([]);
     }
   };
@@ -109,12 +97,7 @@ export const TimetablePage: React.FC = () => {
   // Fetch sections
   const fetchSections = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/sections/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/sections/all');
 
       const data = response.data?.sections || response.data || [];
       const sectionsData = Array.isArray(data)
@@ -132,12 +115,7 @@ export const TimetablePage: React.FC = () => {
   // Fetch teachers
   const fetchTeachers = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/teachers/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/teachers/all');
 
       const data = response.data?.teachers || response.data || [];
       const teachersData = Array.isArray(data)
@@ -155,12 +133,7 @@ export const TimetablePage: React.FC = () => {
   // Fetch subjects
   const fetchSubjects = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/subjects/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/subjects/all');
 
       const data = response.data?.subjects || response.data || [];
       const subjectsData = Array.isArray(data)
@@ -178,12 +151,7 @@ export const TimetablePage: React.FC = () => {
   // Fetch grades
   const fetchGrades = async () => {
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/grades/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/grades/all');
 
       const data = response.data?.grades || response.data || [];
       const gradesData = Array.isArray(data)
@@ -284,24 +252,7 @@ export const TimetablePage: React.FC = () => {
     setDeleting(true);
 
     try {
-      const token = await getAuthToken();
-      if (!token) {
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to perform this action',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      await axios.delete(
-        `${BACKEND_URL}/timetables/delete/${timetableToDelete?.timeTable?.timetable_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await api.delete(`/timetables/delete/${timetableToDelete?.timeTable?.timetable_id}`);
 
       toast({
         title: 'Success',
@@ -311,27 +262,6 @@ export const TimetablePage: React.FC = () => {
       fetchTimetables();
     } catch (error: unknown) {
       console.error('Error deleting timetable:', error);
-      const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
-
-      if (axiosError.response?.status === 401) {
-        toast({
-          title: 'Authentication Failed',
-          description: 'Please log in again to continue',
-          variant: 'destructive'
-        });
-      } else if (axiosError.response?.status === 403) {
-        toast({
-          title: 'Access Denied',
-          description: 'You do not have permission to delete timetable entries',
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: axiosError.response?.data?.message || 'Failed to delete timetable entry',
-          variant: 'destructive'
-        });
-      }
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

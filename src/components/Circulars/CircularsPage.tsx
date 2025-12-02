@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { getAuth } from 'firebase/auth';
+import api from '@/lib/axiosConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +24,6 @@ import {
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
 import { Circular } from '@/types/schoolStoreType';
-import { BACKEND_URL } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { CircularCard } from './CircularCard';
 import { CircularDetailModal } from './CircularDetailModal';
@@ -41,7 +39,6 @@ import {
   Users,
   Calendar
 } from 'lucide-react';
-import { getAuthToken } from '@/lib/utils';
 
 type FilterGroup = 'all' | 'All' | 'Students' | 'Teachers' | 'Parents';
 type FilterStatus = 'all' | 'active' | 'expired';
@@ -72,27 +69,17 @@ export const CircularsPage: React.FC = () => {
   );
   const [deleting, setDeleting] = useState(false);
 
-  // Fetch all circulars using axios
+  // Fetch all circulars using api
   const fetchCirculars = async () => {
     setLoading(true);
     try {
-      const token = await getAuthToken();
-      const response = await axios.get(`${BACKEND_URL}/circulars/all`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      });
+      const response = await api.get('/circulars/all');
 
       // Handle response format
       const data = response?.data?.circulars || response?.data || [];
       setCirculars(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching circulars:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load circulars',
-        variant: 'destructive'
-      });
       setCirculars([]);
     } finally {
       setLoading(false);
@@ -163,7 +150,7 @@ export const CircularsPage: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  // Delete circular using axios (Admin only)
+  // Delete circular using api (Admin only)
   const handleDeleteConfirm = async () => {
     if (!circularToDelete) return;
 
@@ -180,24 +167,7 @@ export const CircularsPage: React.FC = () => {
     setDeleting(true);
 
     try {
-      const token = await getAuthToken();
-      if (!token) {
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to perform this action',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      await axios.delete(
-        `${BACKEND_URL}/circulars/delete/${circularToDelete?.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await api.delete(`/circulars/delete/${circularToDelete?.id}`);
       toast({
         title: 'Success',
         description: 'Circular deleted successfully'
@@ -207,27 +177,6 @@ export const CircularsPage: React.FC = () => {
       fetchCirculars();
     } catch (error: unknown) {
       console.error('Error deleting circular:', error);
-      const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
-
-      if (axiosError.response?.status === 401) {
-        toast({
-          title: 'Authentication Failed',
-          description: 'Please log in again to continue',
-          variant: 'destructive'
-        });
-      } else if (axiosError.response?.status === 403) {
-        toast({
-          title: 'Access Denied',
-          description: 'You do not have permission to delete circulars',
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: axiosError.response?.data?.message || 'Failed to delete circular',
-          variant: 'destructive'
-        });
-      }
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

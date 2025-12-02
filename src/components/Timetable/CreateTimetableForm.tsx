@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
+import api from '@/lib/axiosConfig';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +20,9 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { BACKEND_URL } from '@/lib/utils';
 import { Timetable, DayOfWeek } from '@/types/schoolStoreType';
 import { useSchoolStore } from '@/store/schoolStore';
 import { Loader2 } from 'lucide-react';
-import { getAuthToken } from '@/lib/utils';
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -169,22 +167,6 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
     setLoading(true);
 
     try {
-      const token = await getAuthToken();
-      if (!token) {
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to perform this action',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return;
-      }
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       const payload = {
         ...data,
         created_at: new Date().toISOString(),
@@ -193,17 +175,13 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
 
       if (isEditing && timetable) {
         const timetableId = timetable?.timetable_id;
-        await axios.put(`${BACKEND_URL}/timetables/update/${timetableId}`, payload, {
-          headers
-        });
+        await api.put(`/timetables/update/${timetableId}`, payload);
         toast({
           title: 'Success',
           description: 'Timetable entry updated successfully'
         });
       } else {
-        await axios.post(`${BACKEND_URL}/timetables/create`, payload, {
-          headers
-        });
+        await api.post('/timetables/create', payload);
         toast({
           title: 'Success',
           description: 'Timetable entry created successfully'
@@ -214,30 +192,7 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      const axiosError = err as { response?: { status?: number; data?: { message?: string; error?: string } } };
-
-      if (axiosError.response?.status === 401) {
-        toast({
-          title: 'Authentication Failed',
-          description: 'Please log in again to continue',
-          variant: 'destructive'
-        });
-      } else if (axiosError.response?.status === 403) {
-        toast({
-          title: 'Access Denied',
-          description: 'Only administrators can manage timetables',
-          variant: 'destructive'
-        });
-      } else {
-        const msg =
-          axiosError.response?.data?.error ||
-          axiosError.response?.data?.message ||
-          (err instanceof Error
-            ? err.message
-            : `Failed to ${isEditing ? 'update' : 'create'} timetable entry`);
-
-        toast({ title: 'Error', description: msg, variant: 'destructive' });
-      }
+      console.error('Error saving timetable:', err);
     } finally {
       setLoading(false);
     }

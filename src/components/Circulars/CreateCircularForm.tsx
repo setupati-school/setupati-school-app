@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
+import api from '@/lib/axiosConfig';
 import {
   Dialog,
   DialogContent,
@@ -22,10 +22,8 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { BACKEND_URL } from '@/lib/utils';
 import { Circular } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
-import {getAuthToken} from '@/lib/utils';
 
 const circularSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title is too long'),
@@ -109,22 +107,6 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
     setLoading(true);
 
     try {
-      const token = await getAuthToken();
-      if (!token) {
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to perform this action',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return;
-      }
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       const payload = {
         ...data,
         issued_date: new Date(data?.issued_date).toISOString(),
@@ -132,17 +114,13 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
       };
 
       if (isEditing && circular) {
-        await axios.put(`${BACKEND_URL}/circulars/update/${circular?.id}`, payload, {
-          headers
-        });
+        await api.put(`/circulars/update/${circular?.id}`, payload);
         toast({
           title: 'Success',
           description: 'Circular updated successfully'
         });
       } else {
-        await axios.post(`${BACKEND_URL}/circulars/create`, payload, {
-          headers
-        });
+        await api.post('/circulars/create', payload);
         toast({
           title: 'Success',
           description: 'Circular created successfully'
@@ -153,30 +131,7 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      const axiosError = err as { response?: { status?: number; data?: { message?: string; error?: string } } };
-
-      if (axiosError.response?.status === 401) {
-        toast({
-          title: 'Authentication Failed',
-          description: 'Please log in again to continue',
-          variant: 'destructive'
-        });
-      } else if (axiosError.response?.status === 403) {
-        toast({
-          title: 'Access Denied',
-          description: 'Only administrators can create or edit circulars',
-          variant: 'destructive'
-        });
-      } else {
-        const msg =
-          axiosError.response?.data?.error ||
-          axiosError.response?.data?.message ||
-          (err instanceof Error
-            ? err.message
-            : `Failed to ${isEditing ? 'update' : 'create'} circular`);
-
-        toast({ title: 'Error', description: msg, variant: 'destructive' });
-      }
+      console.error('Error saving circular:', err);
     } finally {
       setLoading(false);
     }

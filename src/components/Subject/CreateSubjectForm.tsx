@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
+import api from '@/lib/axiosConfig';
 import {
   Dialog,
   DialogContent,
@@ -22,10 +22,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/text-area';
 import { useToast } from '@/hooks/use-toast';
-import { BACKEND_URL } from '@/lib/utils';
 import { Subject, Grade, Teacher } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
-import {getAuthToken} from '@lib/utils';
 
 const subjectSchema = z.object({
   subject_name: z
@@ -99,22 +97,6 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
     setLoading(true);
 
     try {
-      const token = await getAuthToken();
-      if (!token) {
-        toast({
-          title: 'Authentication Required',
-          description: 'Please log in to perform this action',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return;
-      }
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       const payload = {
         subject_name: data?.subject_name,
         grade_id: data?.grade_id,
@@ -123,19 +105,13 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       };
 
       if (isEditing && subject) {
-        await axios.put(
-          `${BACKEND_URL}/subjects/update/${subject?.id}`,
-          payload,
-          { headers }
-        );
+        await api.put(`/subjects/update/${subject?.id}`, payload);
         toast({
           title: 'Success',
           description: 'Subject updated successfully'
         });
       } else {
-        await axios.post(`${BACKEND_URL}/subjects/create`, payload, {
-          headers
-        });
+        await api.post('/subjects/create', payload);
         toast({
           title: 'Success',
           description: 'Subject created successfully'
@@ -146,35 +122,7 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      const axiosError = err as {
-        response?: {
-          status?: number;
-          data?: { message?: string; error?: string };
-        };
-      };
-
-      if (axiosError.response?.status === 401) {
-        toast({
-          title: 'Authentication Failed',
-          description: 'Please log in again to continue',
-          variant: 'destructive'
-        });
-      } else if (axiosError.response?.status === 403) {
-        toast({
-          title: 'Access Denied',
-          description: 'Only administrators can create or edit subjects',
-          variant: 'destructive'
-        });
-      } else {
-        const msg =
-          axiosError.response?.data?.error ||
-          axiosError.response?.data?.message ||
-          (err instanceof Error
-            ? err.message
-            : `Failed to ${isEditing ? 'update' : 'create'} subject`);
-
-        toast({ title: 'Error', description: msg, variant: 'destructive' });
-      }
+      console.error('Error saving subject:', err);
     } finally {
       setLoading(false);
     }

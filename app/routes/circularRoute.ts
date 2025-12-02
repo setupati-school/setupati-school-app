@@ -8,6 +8,11 @@ import {
 } from '../service/circular/circular.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 import { isAuthorized } from '../middlewares/isAuthorized.js';
+import { validateBody } from '../middlewares/validateRequest.js';
+import {
+  createCircularSchema,
+  updateCircularSchema
+} from '../zod/circularSchema.js';
 
 const circularRouter = Router();
 
@@ -15,6 +20,7 @@ circularRouter.post(
   '/create',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
+  validateBody(createCircularSchema),
   createCircular
 );
 
@@ -33,6 +39,7 @@ circularRouter.put(
   '/update/:circular_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
+  validateBody(updateCircularSchema),
   updateCircularDetails
 );
 
