@@ -122,7 +122,11 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      console.error('Error saving subject:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to save subject',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }

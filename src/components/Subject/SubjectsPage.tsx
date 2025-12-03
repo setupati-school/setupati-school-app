@@ -324,7 +324,11 @@ export const SubjectsPage: React.FC = () => {
       setSubjectTeacherId('');
       setSubjectDescription('');
     } catch (error) {
-      console.error('Error saving subject:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save subject',
+        variant: 'destructive'
+      });
     } finally {
       setSaving(false);
     }
@@ -354,7 +358,11 @@ export const SubjectsPage: React.FC = () => {
       setDeleteSubjectDialog(false);
       setSubjectToDelete(null);
     } catch (error) {
-      console.error('Error deleting subject:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete subject',
+        variant: 'destructive'
+      });
     } finally {
       setSaving(false);
     }

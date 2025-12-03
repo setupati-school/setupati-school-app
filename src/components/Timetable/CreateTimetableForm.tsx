@@ -192,7 +192,11 @@ export const CreateTimetableForm: React.FC<CreateTimetableFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      console.error('Error saving timetable:', err);
+      toast({
+        title: 'Error',
+        description: 'There was an error saving the timetable entry.',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }

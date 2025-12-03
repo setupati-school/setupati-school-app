@@ -29,6 +29,7 @@ import { CircularCard } from './CircularCard';
 import { CircularDetailModal } from './CircularDetailModal';
 import { CreateCircularForm } from './CreateCircularForm';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { isExpired } from '../../lib/utils';
 import {
   FileText,
   Plus,
@@ -90,10 +91,6 @@ export const CircularsPage: React.FC = () => {
     fetchCirculars();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const isExpired = (validUntil: string): boolean => {
-    return new Date(validUntil) < new Date();
-  };
 
   const filteredCirculars = useMemo(() => {
     return circulars
@@ -176,7 +173,11 @@ export const CircularsPage: React.FC = () => {
       // Refresh the list
       fetchCirculars();
     } catch (error: unknown) {
-      console.error('Error deleting circular:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete circular',
+        variant: 'destructive'
+      });
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

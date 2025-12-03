@@ -56,8 +56,8 @@ export const deleteTimeTableDetails = async (
 
 export const getAllTimeTablesDetails = async (req: Request, res: Response) => {
   try {
-    const timeTables = await getAllTimeTables();
-    res.status(200).json({ timetables: timeTables });
+    const timetables = await getAllTimeTables();
+    res.status(200).json({ timetables });
   } catch (error) {
     logger.error('Error fetching all time tables:', error);
     res.status(500).json({ error: 'Internal Server Error' });

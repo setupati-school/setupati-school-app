@@ -261,7 +261,11 @@ export const TimetablePage: React.FC = () => {
 
       fetchTimetables();
     } catch (error: unknown) {
-      console.error('Error deleting timetable:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete timetable entry',
+        variant: 'destructive'
+      });
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

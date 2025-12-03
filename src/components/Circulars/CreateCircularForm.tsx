@@ -131,7 +131,11 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
-      console.error('Error saving circular:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to save circular',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
