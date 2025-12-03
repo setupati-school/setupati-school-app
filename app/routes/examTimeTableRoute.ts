@@ -1,5 +1,4 @@
-import { Router, Request, Response } from 'express';
-import type examTimeTable from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createExamTimeTable,
   searchExamTimeTable,
@@ -13,7 +12,7 @@ import { validateBody } from '../middlewares/validateRequest.js';
 import {
   createExamTimetableSchema,
   updateExamTimetableSchema
-} from '../zod/examTimeTableSchema.js';
+} from '../zod/examTimetableSchema.js';
 
 const examTimeTableRouter = Router();
 

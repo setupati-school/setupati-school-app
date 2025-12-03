@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import { DayOfWeek } from '@/types/schoolStoreType';
 
 export function cn(...inputs: ClassValue[]) {
@@ -54,12 +54,23 @@ export const getAuthToken = async (): Promise<string | null> => {
     const token = await user.getIdToken();
     if (!token) {
       console.warn('Failed to generate ID token');
+      await signOut(auth);
+      console.warn('User logged out due to token generation failure');
       return null;
     }
 
     return token;
   } catch (error) {
+    
     console.error('Error getting auth token:', error);
+    try {
+      const auth = getAuth();
+      await signOut(auth);
+      console.warn('User logged out due to token error');
+    } catch (logoutError) {
+      console.error('Error logging out user:', logoutError);
+    }
+    
     return null;
   }
 };

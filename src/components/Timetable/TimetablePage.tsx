@@ -22,7 +22,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
-import { Timetable, TimetableResponse, ExamTimetable, DayOfWeek, ExamTimetableResponse, formatDate, formatTime } from '@/types/schoolStoreType';
+import { Timetable, TimetableResponse, ExamTimetable, DayOfWeek, ExamTimetableResponse } from '@/types/schoolStoreType';
+import { formatDate, formatTime } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { CreateTimetableForm } from './CreateTimetableForm';
 import { CreateExamTimetableForm } from './CreateExamTimetableForm';
