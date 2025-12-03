@@ -22,12 +22,30 @@ export const formatDate = (iso: string | undefined) => {
 };
 
 export const getAuthToken = async (): Promise<string | null> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
+  try {
+    const auth = getAuth();
+    if (!auth) {
+      console.warn('Firebase Auth not initialized');
+      return null;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      console.warn('No user currently authenticated');
+      return null;
+    }
+
+    const token = await user.getIdToken();
+    if (!token) {
+      console.warn('Failed to generate ID token');
+      return null;
+    }
+
+    return token;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return null;
   }
-  return null;
 };
 
 
