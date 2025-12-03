@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { getAuth } from 'firebase/auth';
+import { DayOfWeek } from '@/types/schoolStoreType';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,6 +21,21 @@ export const formatDate = (iso: string | undefined) => {
     return iso;
   }
 };
+
+export const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+export const EXAM_TYPES = ['Unit Test', 'Quarterly', 'Half-Yearly', 'Annual'] as const;
+
+export  const PERIODS = [
+  { period: 1, startTime: '9:00 AM', endTime: '9:45 AM' },
+  { period: 2, startTime: '9:45 AM', endTime: '10:30 AM' },
+  { period: 3, startTime: '10:30 AM', endTime: '11:15 AM' },
+  { period: 4, startTime: '11:15 AM', endTime: '12:00 PM' },
+  { period: 5, startTime: '12:45 PM', endTime: '1:30 PM' },
+  { period: 6, startTime: '1:30 PM', endTime: '2:15 PM' },
+  { period: 7, startTime: '2:15 PM', endTime: '3:00 PM' },
+  { period: 8, startTime: '3:00 PM', endTime: '3:45 PM' }
+];
 
 export const getAuthToken = async (): Promise<string | null> => {
   try {
@@ -66,4 +82,13 @@ export const getTargetGroupColor = (group: string) => {
 
 export const isExpired = (validUntil: string): boolean => {
   return new Date(validUntil) < new Date();
+};
+
+export const formatTime = (time: string) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
 };

@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogFooter
 } from '@/components/ui/dialog';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,20 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Circular } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
-
-const circularSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200, 'Title is too long'),
-  description: z
-    .string()
-    .min(1, 'Description is required')
-    .max(5000, 'Description is too long'),
-  issued_by: z.string().min(1, 'Issued by is required'),
-  targeted_group: z.enum(['All', 'Students', 'Teachers', 'Parents'], {
-    required_error: 'Please select a target group'
-  }),
-  issued_date: z.string().min(1, 'Issue date is required'),
-  valid_until: z.string().min(1, 'Expiry date is required')
-});
+import { circularSchema } from '@/components/zod';
 
 type CircularFormData = z.infer<typeof circularSchema>;
 
@@ -131,10 +119,10 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
       onOpenChange(false);
       onSuccess();
     } catch (err: unknown) {
+      const { message } = firebaseErrorParser(err);
       toast({
         title: 'Error',
-        description: 'Failed to save circular',
-        variant: 'destructive'
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -270,3 +258,4 @@ export const CreateCircularForm: React.FC<CreateCircularFormProps> = ({
 };
 
 export default CreateCircularForm;
+

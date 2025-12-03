@@ -26,6 +26,7 @@ export const useSchoolStore = create<SchoolStore>()(
         circulars: [],
         homework: [],
         timetables: [],
+        examTimetables: [],
         exams: [], // grouped exam results from backend
         activeView: 'dashboard',
         sidebarCollapsed: false,
@@ -48,6 +49,7 @@ export const useSchoolStore = create<SchoolStore>()(
         setCirculars: (circulars) => set({ circulars }),
         setHomework: (homework) => set({ homework }),
         setTimetables: (timetables) => set({ timetables }),
+        setExamTimetables: (examTimetables) => set({ examTimetables }),
         setCurrentLanguage: (code) => set({ currentLanguage: code }),
 
         // exams (grouped) management
@@ -141,6 +143,7 @@ export const useSchoolStore = create<SchoolStore>()(
             circulars: [],
             homework: [],
             timetables: [],
+            examTimetables: [],
             exams: [],
             activeView: 'dashboard',
             sidebarCollapsed: false,

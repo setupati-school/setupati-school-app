@@ -20,20 +20,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { Textarea } from '@/components/ui/text-area';
 import { useToast } from '@/hooks/use-toast';
 import { Subject, Grade, Teacher } from '@/types/schoolStoreType';
 import { Loader2 } from 'lucide-react';
-
-const subjectSchema = z.object({
-  subject_name: z
-    .string()
-    .min(1, 'Subject name is required')
-    .max(100, 'Subject name is too long'),
-  grade_id: z.string().min(1, 'Please select a grade'),
-  teacher_id: z.string().min(1, 'Please select a teacher'),
-  description: z.string().optional()
-});
+import { subjectSchema } from '@/components/zod';
 
 type SubjectFormData = z.infer<typeof subjectSchema>;
 
@@ -121,11 +113,11 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       reset();
       onOpenChange(false);
       onSuccess();
-    } catch (err: unknown) {
+    } catch (error: unknown) {
+      const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
-        description: 'Failed to save subject',
-        variant: 'destructive'
+        description: message,
       });
     } finally {
       setLoading(false);

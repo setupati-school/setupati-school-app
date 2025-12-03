@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
 import { Circular } from '@/types/schoolStoreType';
@@ -173,10 +174,10 @@ export const CircularsPage: React.FC = () => {
       // Refresh the list
       fetchCirculars();
     } catch (error: unknown) {
+      const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
-        description: 'Failed to delete circular',
-        variant: 'destructive'
+        description: message,
       });
     } finally {
       setDeleting(false);
@@ -442,3 +443,4 @@ export const CircularsPage: React.FC = () => {
 };
 
 export default CircularsPage;
+

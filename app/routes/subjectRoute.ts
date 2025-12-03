@@ -21,26 +21,36 @@ subjectRouter.post(
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createSubjectSchema),
-  createSubject
+  (req,res) => {
+  createSubject(req, res);
+  } 
 );
 
-subjectRouter.get('/search/:subject_id', searchSubject);
+subjectRouter.get('/search/:subject_id', isAuthenticated, (req, res) => {
+  searchSubject(req, res);
+} );
 
 subjectRouter.delete(
   '/delete/:subject_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
-  deleteSubjectDetails
+  (req, res) => {
+  deleteSubjectDetails(req, res);
+  } 
 );
 
-subjectRouter.get('/all', getAllSubjects);
+subjectRouter.get('/all', isAuthenticated, (req, res) => {
+  getAllSubjects(req, res);
+});
 
 subjectRouter.put(
   '/update/:subject_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateSubjectSchema),
-  updateSubjectDetails
+  (req, res) => {
+  updateSubjectDetails(req, res);
+  } 
 );
 
 export default subjectRouter;

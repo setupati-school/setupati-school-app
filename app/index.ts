@@ -40,7 +40,7 @@ app.use('/teachers', teacherRouter);
 app.use('/timetables', timeTableRouter);
 app.use('/parents', parentRouter);
 app.use('/examresults', examResultRouter);
-app.use('/examtimetables', examTimeTableRouter);
+app.use('/exam-timetables', examTimeTableRouter);
 app.use('/api/v1/auth', authRouters);
 app.use('/subjects', subjectRouter);
 app.use('/sections', sectionRouter);

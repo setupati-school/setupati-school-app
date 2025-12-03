@@ -21,26 +21,36 @@ circularRouter.post(
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createCircularSchema),
-  createCircular
+  (req,res) => {
+  createCircular(req,res);
+  }
 );
 
-circularRouter.get('/search/:circular_id', searchCircular);
+circularRouter.get('/search/:circular_id', isAuthenticated, (req, res) => {
+  searchCircular(req, res);
+});
 
 circularRouter.delete(
   '/delete/:circular_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
-  deleteCircularDetails
+  (req, res) => {
+  deleteCircularDetails(req, res);
+  } 
 );
 
-circularRouter.get('/all', getAllCirculars);
+circularRouter.get('/all', isAuthenticated, (req, res) => {
+  getAllCirculars(req, res);
+});
 
 circularRouter.put(
   '/update/:circular_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateCircularSchema),
-  updateCircularDetails
+  (req, res) => {
+    updateCircularDetails(req, res);
+  } 
 );
 
 export default circularRouter;

@@ -144,6 +144,29 @@ export interface TimetableResponse {
   timeTable: Timetable;
 }
 
+export type ExamType = 'Unit Test' | 'Quarterly' | 'Half-Yearly' | 'Annual';
+
+export interface ExamTimetable {
+  id?: string;
+  exam_time_table_id?: string;
+  grade_id: string;
+  subject_id: string;
+  date?: string;
+  exam_date?: string;
+  start_date?: string;
+  start_time?: string;
+  end_time?: string;
+  exam_type: ExamType;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// API response wrapper for exam timetable
+export interface ExamTimetableResponse {
+  id: string;
+  examTimeTable: ExamTimetable;
+}
+
 // Store interface
 export interface SchoolStore {
   // Current user
@@ -159,6 +182,7 @@ export interface SchoolStore {
   circulars: Circular[];
   homework: Homework[];
   timetables: Timetable[];
+  examTimetables: ExamTimetable[];
 
   // UI State
   activeView: string;
@@ -181,6 +205,7 @@ export interface SchoolStore {
   setCirculars: (circulars: Circular[]) => void;
   setHomework: (homework: Homework[]) => void;
   setTimetables: (timetables: Timetable[]) => void;
+  setExamTimetables: (examTimetables: ExamTimetable[]) => void;
 
   // Statistics
   getStudentCount: () => number;

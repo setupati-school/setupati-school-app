@@ -19,12 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
-import { Timetable, TimetableResponse, DayOfWeek } from '@/types/schoolStoreType';
+import { Timetable, TimetableResponse, ExamTimetable, DayOfWeek, ExamTimetableResponse, formatDate, formatTime } from '@/types/schoolStoreType';
 import { useToast } from '@/hooks/use-toast';
 import { CreateTimetableForm } from './CreateTimetableForm';
+import { CreateExamTimetableForm } from './CreateExamTimetableForm';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import {
   Calendar,
   Plus,
@@ -33,28 +36,16 @@ import {
   BookOpen,
   Users,
   Edit2,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react';
-
-const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-// Period configuration with times
-const PERIODS = [
-  { period: 1, startTime: '9:00 AM', endTime: '9:45 AM' },
-  { period: 2, startTime: '9:45 AM', endTime: '10:30 AM' },
-  { period: 3, startTime: '10:30 AM', endTime: '11:15 AM' },
-  { period: 4, startTime: '11:15 AM', endTime: '12:00 PM' },
-  { period: 5, startTime: '12:45 PM', endTime: '1:30 PM' },
-  { period: 6, startTime: '1:30 PM', endTime: '2:15 PM' },
-  { period: 7, startTime: '2:15 PM', endTime: '3:00 PM' },
-  { period: 8, startTime: '3:00 PM', endTime: '3:45 PM' }
-];
-
+import { DAYS_OF_WEEK, PERIODS, EXAM_TYPES } from '../../lib/utils';
 
 export const TimetablePage: React.FC = () => {
   const { toast } = useToast();
   const {
     timetables, setTimetables,
+    examTimetables, setExamTimetables,
     sections, setSections,
     subjects, setSubjects,
     teachers, setTeachers,
@@ -65,15 +56,24 @@ export const TimetablePage: React.FC = () => {
   const isAdmin = role === 'admin';
 
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('class');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedSection, setSelectedSection] = useState<string>('all');
+  const [selectedExamType, setSelectedExamType] = useState<string>('all');
 
-  // Modal states
+  // Modal states for class timetable
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingTimetable, setEditingTimetable] = useState<TimetableResponse | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [timetableToDelete, setTimetableToDelete] = useState<TimetableResponse | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Modal states for exam timetable
+  const [examModalOpen, setExamModalOpen] = useState(false);
+  const [editingExamTimetable, setEditingExamTimetable] = useState<ExamTimetable | null>(null);
+  const [examDeleteDialogOpen, setExamDeleteDialogOpen] = useState(false);
+  const [examTimetableToDelete, setExamTimetableToDelete] = useState<ExamTimetableResponse | null>(null);
+  const [examDeleting, setExamDeleting] = useState(false);
 
   // Fetch all timetables
   const fetchTimetables = async () => {
@@ -91,6 +91,25 @@ export const TimetablePage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching timetables:', error);
       setTimetables([]);
+    }
+  };
+
+  // Fetch exam timetables
+  const fetchExamTimetables = async () => {
+    try {
+      const response = await api.get('/exam-timetables/all');
+
+      const data = response?.data || [];
+      const examTimetablesData = Array.isArray(data)
+        ? data.map((item: { id: string; examTimeTable?: Record<string, unknown> }) => ({
+            id: item?.id,
+            ...(item?.examTimeTable || item)
+          }))
+        : [];
+      setExamTimetables(examTimetablesData);
+    } catch (error) {
+      console.error('Error fetching exam timetables:', error);
+      setExamTimetables([]);
     }
   };
 
@@ -172,6 +191,7 @@ export const TimetablePage: React.FC = () => {
     try {
       await Promise.all([
         fetchTimetables(),
+        fetchExamTimetables(),
         fetchSections(),
         fetchTeachers(),
         fetchSubjects(),
@@ -200,7 +220,22 @@ export const TimetablePage: React.FC = () => {
     const filtered = timetables.filter(t => t?.timeTable?.section_id === selectedSection);
     return filtered;
   }, [timetables, selectedSection]);
-    
+
+  // Filter exam timetables by selected grade and exam type
+  const filteredExamTimetables = useMemo(() => {
+    let filtered = examTimetables || [];
+    if (selectedGrade !== 'all') {
+      filtered = filtered?.filter(et => et?.grade_id === selectedGrade);
+    }
+    if (selectedExamType !== 'all') {
+      filtered = filtered?.filter(et => et?.exam_type === selectedExamType);
+    }
+    // Sort by date
+    filtered = [...filtered].sort((a, b) =>
+      new Date(a?.date || a?.exam_date || '').getTime() - new Date(b?.date || b?.exam_date || '').getTime()
+    );
+    return filtered;
+  }, [examTimetables, selectedGrade, selectedExamType]);
 
   // Get helper functions
   const getSectionName = (sectionId: string) => {
@@ -210,8 +245,13 @@ export const TimetablePage: React.FC = () => {
     return `${grade?.grade_name || ''} - ${section.section_name}`;
   };
 
+  const getGradeName = (gradeId: string) => {
+    const grade = grades?.find(g => g?.grade_id === gradeId || g?.id === gradeId);
+    return grade?.grade_name || 'Unknown Grade';
+  };
+
   const getSubjectName = (subjectId: string) => {
-    const subject = subjects.find(s => s.subject_id === subjectId);
+    const subject = subjects.find(s => s.subject_id === subjectId || s.id === subjectId);
     return subject?.subject_name || 'Unknown Subject';
   };
 
@@ -261,10 +301,10 @@ export const TimetablePage: React.FC = () => {
 
       fetchTimetables();
     } catch (error: unknown) {
+      const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
-        description: 'Failed to delete timetable entry',
-        variant: 'destructive'
+        description: message,
       });
     } finally {
       setDeleting(false);
@@ -282,6 +322,67 @@ export const TimetablePage: React.FC = () => {
     setCreateModalOpen(open);
     if (!open) {
       setEditingTimetable(null);
+    }
+  };
+
+  // Exam timetable handlers
+  const handleExamEdit = (examTimetable: ExamTimetableResponse) => {
+    setEditingExamTimetable(examTimetable?.examTimeTable || examTimetable);
+    setExamModalOpen(true);
+  };
+
+  const handleExamDeleteClick = (examTimetable: ExamTimetableResponse) => {
+    setExamTimetableToDelete(examTimetable);
+    setExamDeleteDialogOpen(true);
+  };
+
+  const handleExamDeleteConfirm = async () => {
+    if (!examTimetableToDelete) return;
+
+    if (!isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'Only administrators can delete exam timetable entries',
+        variant: 'destructive'
+      });
+      setExamDeleteDialogOpen(false);
+      return;
+    }
+
+    setExamDeleting(true);
+
+    try {
+      const examId = examTimetableToDelete?.examTimeTable?.exam_time_table_id || examTimetableToDelete?.id;
+      await api.delete(`/exam-timetables/delete/${examId}`);
+
+      toast({
+        title: 'Success',
+        description: 'Exam timetable entry deleted successfully'
+      });
+
+      fetchExamTimetables();
+    } catch (error: unknown) {
+      const { message } = firebaseErrorParser(error);
+      toast({
+        title: 'Error',
+        description: message,
+      });
+    } finally {
+      setExamDeleting(false);
+      setExamDeleteDialogOpen(false);
+      setExamTimetableToDelete(null);
+    }
+  };
+
+  const handleExamCreateSuccess = () => {
+    setEditingExamTimetable(null);
+    fetchExamTimetables();
+  };
+
+  const handleExamModalClose = (open: boolean) => {
+    setExamModalOpen(open);
+    if (!open) {
+      setEditingExamTimetable(null);
     }
   };
 
@@ -303,7 +404,7 @@ export const TimetablePage: React.FC = () => {
             Timetable Management
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            View and manage class timetables
+            View and manage class and exam timetables
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -315,234 +416,425 @@ export const TimetablePage: React.FC = () => {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          {isAdmin && (
+          {isAdmin && activeTab === 'class' && (
             <Button onClick={() => setCreateModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Entry
             </Button>
           )}
+          {isAdmin && activeTab === 'exam' && (
+            <Button onClick={() => setExamModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Exam
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-        <Card className="shadow-soft">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Total Periods
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-blue-500" />
-              Subjects
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{stats.uniqueSubjects}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4 text-green-500" />
-              Teachers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">{stats.uniqueTeachers}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="class" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Class Timetable
+          </TabsTrigger>
+          <TabsTrigger value="exam" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Exam Timetable
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Filters */}
-      <Card className="shadow-soft">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <Select
-                value={selectedGrade}
-                onValueChange={(v) => {
-                  setSelectedGrade(v);
-                  setSelectedSection('all');
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Grades</SelectItem>
-                  {grades.map((grade) => (
-                    <SelectItem key={grade?.grade_id} value={grade?.grade_id}>
-                      {grade?.grade_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1">
-              <Select
-                value={selectedSection}
-                onValueChange={setSelectedSection}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Section" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sections</SelectItem>
-                  {filteredSections.map((section) => (
-                    <SelectItem key={section?.section_id} value={section?.section_id}>
-                      {section?.section_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Class Timetable Tab */}
+        <TabsContent value="class" className="space-y-6 mt-6">
+          {/* Stats Cards */}
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <Card className="shadow-soft">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Total Periods
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-soft">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-blue-500" />
+                  Subjects
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-blue-600">{stats.uniqueSubjects}</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-soft">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4 text-green-500" />
+                  Teachers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-green-600">{stats.uniqueTeachers}</p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Timetable Grid */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner />
-        </div>
-      ) : selectedSection === 'all' ? (
-        <Card className="shadow-soft">
-          <CardContent className="py-12">
-            <div className="text-center">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Select Grade & Section
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Please select a grade and section to view the timetable.
-              </p>
+          {/* Filters */}
+          <Card className="shadow-soft">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <Select
+                    value={selectedGrade}
+                    onValueChange={(v) => {
+                      setSelectedGrade(v);
+                      setSelectedSection('all');
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Grades</SelectItem>
+                      {grades.map((grade) => (
+                        <SelectItem key={grade?.grade_id} value={grade?.grade_id}>
+                          {grade?.grade_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Select
+                    value={selectedSection}
+                    onValueChange={setSelectedSection}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sections</SelectItem>
+                      {filteredSections.map((section) => (
+                        <SelectItem key={section?.section_id} value={section?.section_id}>
+                          {section?.section_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Timetable Grid */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner />
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="shadow-soft overflow-hidden">
-          {/* Section Header */}
-          <CardHeader className="bg-primary/5 border-b">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <span>
-                {' '}Timetable for Section{' '}
-                <span className="text-primary">{getSectionName(selectedSection)}</span>
-              </span>
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {filteredTimetables.length} period{filteredTimetables.length !== 1 ? 's' : ''} scheduled
-            </p>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="border p-3 text-left font-semibold text-sm min-w-[100px]">Day</th>
-                    {PERIODS.map((p) => (
-                      <th key={p.period} className="border p-2 text-center font-semibold text-sm min-w-[120px]">
-                        <div className="flex flex-col gap-1">
-                          <span>Period {p.period}</span>
-                          <span className="text-xs font-normal text-muted-foreground">
-                            {p.startTime} - {p.endTime}
-                          </span>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {DAYS_OF_WEEK.map((day) => (
-                    <tr key={day} className="hover:bg-muted/30">
-                      <td className="border p-3 font-medium bg-muted/20">
-                        {day}
-                      </td>
-                      {PERIODS.map((p) => {
-                        const entry = getTimetableEntry(day, p.period);
-                        return (
-                          <td key={`${day}-${p.period}`} className="border p-2">
-                            {entry ? (
-                              <div className="bg-primary/10 rounded-lg p-2 min-h-[70px] relative group">
-                                <div className="font-medium text-sm text-primary">
-                                   {getSubjectName(entry?.timeTable?.subject_id)}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                   ~ {getTeacherName(entry?.timeTable?.teacher_id)}
-                                </div>
-                                {isAdmin && (
-                                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={() => handleEdit(entry)}
-                                    >
-                                      <Edit2 className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 text-destructive"
-                                      onClick={() => handleDeleteClick(entry)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+          ) : selectedSection === 'all' ? (
+            <Card className="shadow-soft">
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Select Grade & Section
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Please select a grade and section to view the timetable.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="shadow-soft overflow-hidden">
+              {/* Section Header */}
+              <CardHeader className="bg-primary/5 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <span>
+                    {' '}Timetable for Section{' '}
+                    <span className="text-primary">{getSectionName(selectedSection)}</span>
+                  </span>
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {filteredTimetables.length} period{filteredTimetables.length !== 1 ? 's' : ''} scheduled
+                </p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="border p-3 text-left font-semibold text-sm min-w-[100px]">Day</th>
+                        {PERIODS.map((p) => (
+                          <th key={p.period} className="border p-2 text-center font-semibold text-sm min-w-[120px]">
+                            <div className="flex flex-col gap-1">
+                              <span>Period {p.period}</span>
+                              <span className="text-xs font-normal text-muted-foreground">
+                                {p.startTime} - {p.endTime}
+                              </span>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {DAYS_OF_WEEK.map((day) => (
+                        <tr key={day} className="hover:bg-muted/30">
+                          <td className="border p-3 font-medium bg-muted/20">
+                            {day}
+                          </td>
+                          {PERIODS.map((p) => {
+                            const entry = getTimetableEntry(day, p.period);
+                            return (
+                              <td key={`${day}-${p.period}`} className="border p-2">
+                                {entry ? (
+                                  <div className="bg-primary/10 rounded-lg p-2 min-h-[70px] relative group">
+                                    <div className="font-medium text-sm text-primary">
+                                       {getSubjectName(entry?.timeTable?.subject_id)}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                       ~ {getTeacherName(entry?.timeTable?.teacher_id)}
+                                    </div>
+                                    {isAdmin && (
+                                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6"
+                                          onClick={() => handleEdit(entry)}
+                                        >
+                                          <Edit2 className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6 text-destructive"
+                                          onClick={() => handleDeleteClick(entry)}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="min-h-[70px] flex items-center justify-center text-muted-foreground text-xs">
+                                    {isAdmin ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs"
+                                        onClick={() => {
+                                          setEditingTimetable({
+                                            id: '',
+                                            timeTable: {
+                                              day_of_week: day,
+                                              period: p.period,
+                                              section_id: selectedSection,
+                                              subject_id: '',
+                                              teacher_id: '',
+                                              created_at: '',
+                                              updated_at: ''
+                                            }
+                                          });
+                                          setCreateModalOpen(true);
+                                        }}
+                                      >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add
+                                      </Button>
+                                    ) : (
+                                      '-'
+                                    )}
                                   </div>
                                 )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Exam Timetable Tab */}
+        <TabsContent value="exam" className="space-y-6 mt-6">
+          {/* Exam Timetable Card with Filters */}
+          <Card className="shadow-soft">
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Exam Timetable
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Select grade and exam type to view the schedule
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {/* Dropdowns */}
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Grade</label>
+                  <Select
+                    value={selectedGrade}
+                    onValueChange={(v) => {
+                      setSelectedGrade(v);
+                      setSelectedSection('all');
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Select Grade</SelectItem>
+                      {grades?.map((grade) => (
+                        <SelectItem key={grade?.grade_id} value={grade?.grade_id}>
+                          {grade?.grade_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Exam Type</label>
+                  <Select
+                    value={selectedExamType}
+                    onValueChange={setSelectedExamType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Exam Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Select Exam Type</SelectItem>
+                      {EXAM_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Exam Timetable Content */}
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <LoadingSpinner />
+                </div>
+              ) : selectedGrade === 'all' || selectedExamType === 'all' ? (
+                <div className="py-12">
+                  <div className="text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Select Grade & Exam Type
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Please select both grade and exam type to view the exam timetable.
+                    </p>
+                  </div>
+                </div>
+              ) : filteredExamTimetables?.length === 0 ? (
+                <div className="py-12">
+                  <div className="text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      No Exam Timetable
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      No {selectedExamType} exams scheduled for {getGradeName(selectedGrade)}.
+                    </p>
+                    {isAdmin && (
+                      <Button onClick={() => setExamModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Exam
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-primary">
+                      {selectedExamType} - {getGradeName(selectedGrade)}
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      {filteredExamTimetables?.length} subject{filteredExamTimetables?.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          <th className="border-b p-3 text-center font-semibold text-sm w-16">S.No</th>
+                          <th className="border-b p-3 text-left font-semibold text-sm">Subject</th>
+                          <th className="border-b p-3 text-left font-semibold text-sm">Date</th>
+                          <th className="border-b p-3 text-left font-semibold text-sm">Time</th>
+                          {isAdmin && (
+                            <th className="border-b p-3 text-center font-semibold text-sm w-24">Actions</th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredExamTimetables?.map((exam, index) => (
+                          <tr key={exam?.exam_time_table_id || exam?.id || index} className="hover:bg-muted/30">
+                            <td className="border-b p-3 text-center">
+                              <span className="font-medium text-muted-foreground">{index + 1}</span>
+                            </td>
+                            <td className="border-b p-3">
+                              <div className="font-medium text-primary">{getSubjectName(exam?.subject_id)}</div>
+                            </td>
+                            <td className="border-b p-3">
+                              <div className="font-medium">{formatDate(exam?.date || exam?.exam_date)}</div>
+                            </td>
+                            <td className="border-b p-3">
+                              <div className="flex items-center gap-1 text-sm">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                {formatTime(exam?.start_time)} - {formatTime(exam?.end_time)}
                               </div>
-                            ) : (
-                              <div className="min-h-[70px] flex items-center justify-center text-muted-foreground text-xs">
-                                {isAdmin ? (
+                            </td>
+                            {isAdmin && (
+                              <td className="border-b p-3 text-center">
+                                <div className="flex items-center justify-center gap-1">
                                   <Button
                                     variant="ghost"
-                                    size="sm"
-                                    className="text-xs"
-                                    onClick={() => {
-                                      setEditingTimetable({
-                                        id: '',
-                                        timeTable: {
-                                          day_of_week: day,
-                                          period: p.period,
-                                          section_id: selectedSection,
-                                          subject_id: '',
-                                          teacher_id: '',
-                                          created_at: '',
-                                          updated_at: ''
-                                        }
-                                      });
-                                      setCreateModalOpen(true);
-                                    }}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleExamEdit({ id: exam?.id || '', examTimeTable: exam })}
                                   >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Add
+                                    <Edit2 className="h-4 w-4" />
                                   </Button>
-                                ) : (
-                                  '-'
-                                )}
-                              </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive"
+                                    onClick={() => handleExamDeleteClick({ id: exam?.id || '', examTimeTable: exam })}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
                             )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Modal for Class Timetable */}
       <CreateTimetableForm
         open={createModalOpen}
         onOpenChange={handleCreateModalClose}
@@ -552,7 +844,17 @@ export const TimetablePage: React.FC = () => {
         preSelectedGrade={selectedGrade !== 'all' ? selectedGrade : undefined}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Create/Edit Modal for Exam Timetable */}
+      <CreateExamTimetableForm
+        open={examModalOpen}
+        onOpenChange={handleExamModalClose}
+        examTimetable={editingExamTimetable}
+        onSuccess={handleExamCreateSuccess}
+        preSelectedGrade={selectedGrade !== 'all' ? selectedGrade : undefined}
+        preSelectedExamType={selectedExamType !== 'all' ? selectedExamType : undefined}
+      />
+
+      {/* Delete Confirmation Dialog for Class Timetable */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -576,8 +878,34 @@ export const TimetablePage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Confirmation Dialog for Exam Timetable */}
+      <AlertDialog open={examDeleteDialogOpen} onOpenChange={setExamDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Exam Timetable Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this exam entry for{' '}
+              {examTimetableToDelete?.examTimeTable && getSubjectName(examTimetableToDelete?.examTimeTable?.subject_id)} on{' '}
+              {examTimetableToDelete?.examTimeTable && formatDate(examTimetableToDelete?.examTimeTable?.date || examTimetableToDelete?.examTimeTable?.exam_date)}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={examDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleExamDeleteConfirm}
+              disabled={examDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {examDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 export default TimetablePage;
+

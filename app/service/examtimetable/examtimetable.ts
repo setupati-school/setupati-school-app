@@ -8,48 +8,43 @@ import {
   updateExamTimeTable,
   searchExamTimeTable as searchExamTimeTableApi
 } from '../../api/examtimetable/examtimetable.js';
-type ExamTimeTable = typeof examTimeTable;
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
 
 export const createExamTimeTable = async (
-  req: Request<{ ExamTimeTable: ExamTimeTable }>,
-  res: Response
+  req: Request, res: Response
 ) => {
   try {
-    const { body: data } = req ?? {};
+    const data = req?.body;
     const id = await addExamTimeTable(data);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating exam time table:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating exam time table:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const searchExamTimeTable = async (
-  req: Request<{ exam_time_table_id: string }>,
+  req: Request,
   res: Response
 ) => {
   try {
-    const { exam_time_table_id: examTimeTableId } = req.params;
-    if (!examTimeTableId) {
-      return res.status(400).json({ error: 'Exam Time Table ID is required' });
-    }
+    const { exam_time_table_id: examTimeTableId } = req?.params || {};
     const examTimeTable = await searchExamTimeTableApi(examTimeTableId);
     res.status(200).json(examTimeTable);
   } catch (error) {
-    logger.error('Error searching for exam time table:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error searching for exam time table:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const deleteExamTimeTableDetails = async (
-  req: Request<{ exam_time_table_id: string }>,
+  req: Request,
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { exam_time_table_id: examTimeTableId } = req.params;
-    if (!examTimeTableId) {
-      return res.status(400).json({ error: 'Exam Time Table ID is required' });
-    }
+    const { exam_time_table_id: examTimeTableId } = req?.params || {};
     const deleted = await deleteExamTimeTable(examTimeTableId);
     logger.info('deleted exam time table data', deleted);
     if (!deleted) {
@@ -57,8 +52,9 @@ export const deleteExamTimeTableDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error deleting exam time table:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting exam time table:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
@@ -68,22 +64,20 @@ export const getAllExamTimeTablesDetails = async (
 ) => {
   try {
     const examTimeTables = await getAllExamTimeTables();
-    res.status(200).json(examTimeTables);
+    res.status(200).json(examTimeTables || []);
   } catch (error) {
-    logger.error('Error fetching all exam time tables:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all exam time tables:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const updateExamTimeTableDetails = async (
-  req: Request<{
-    exam_time_table_id: string;
-    ExamTimeTable: Partial<ExamTimeTable>;
-  }>,
+  req: Request,
   res: Response
 ) => {
   try {
-    const { exam_time_table_id: examTimeTableId } = req.params;
+    const { exam_time_table_id: examTimeTableId } = req?.params || {};
     if (!examTimeTableId) {
       return res.status(400).json({ error: 'Exam Time Table ID is required' });
     }
@@ -94,7 +88,8 @@ export const updateExamTimeTableDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error updating exam time table:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating exam time table:', message);
+    res.status(httpCode).json({ error: message });
   }
 };

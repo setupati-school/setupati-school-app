@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogFooter
 } from '@/components/ui/dialog';
+import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -324,10 +325,10 @@ export const SubjectsPage: React.FC = () => {
       setSubjectTeacherId('');
       setSubjectDescription('');
     } catch (error) {
+      const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
-        description: 'Failed to save subject',
-        variant: 'destructive'
+        description: message,
       });
     } finally {
       setSaving(false);
@@ -357,11 +358,11 @@ export const SubjectsPage: React.FC = () => {
 
       setDeleteSubjectDialog(false);
       setSubjectToDelete(null);
-    } catch (error) {
+    } catch (error : unknown) {
+      const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
-        description: 'Failed to delete subject',
-        variant: 'destructive'
+        description: message,
       });
     } finally {
       setSaving(false);
@@ -739,3 +740,4 @@ export const SubjectsPage: React.FC = () => {
 };
 
 export default SubjectsPage;
+

@@ -2,7 +2,7 @@ import { db } from '../../firebase.js';
 import type examTimeTable from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
+import { mapDocsWithKey, now } from '../../utils/helper.js';
 type ExamTimeTable = typeof examTimeTable;
 
 if (!db)
@@ -16,7 +16,12 @@ const examTimeTableCollection = db.collection('exam_timetables');
 export const addExamTimeTable = async (
   data: ExamTimeTable
 ): Promise<string> => {
-  const docRef = await examTimeTableCollection.add(data);
+  const docRef = await examTimeTableCollection.add({
+    ...data,
+    exam_time_table_id: data?.exam_time_table_id || `exam_tt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    created_at: data?.created_at || now,
+    updated_at: now
+  });
   logger.info(`ExamTimeTable added with ID: ${docRef.id}`);
   return docRef.id;
 };
@@ -101,21 +106,24 @@ export const updateExamTimeTable = async (
   logger.info(`Updating exam time table with ID: ${examTimeTableId}`);
   const examTimeTableData = await getExamTimeTable(examTimeTableId);
   if (
-    !examTimeTableData.length ||
-    examTimeTableData[0].examTimeTable === null
+    !examTimeTableData?.length ||
+    examTimeTableData?.[0]?.examTimeTable === null
   ) {
     logger.info(
       `No exam time table found to update with ID: ${examTimeTableId}`
     );
     return false;
   }
-  const updatePromises = examTimeTableData.map(({ id }) => {
+  const updatePromises = examTimeTableData?.map(({ id }) => {
     const examTimeTableRef = examTimeTableCollection.doc(id);
-    return examTimeTableRef.update(data);
+    return examTimeTableRef.update({
+      ...data,
+      updated_at: now
+    });
   });
   await Promise.all(updatePromises);
   logger.info(
-    `Updated ${examTimeTableData.length} exam time table(s) with ID: ${examTimeTableId}`
+    `Updated ${examTimeTableData?.length} exam time table(s) with ID: ${examTimeTableId}`
   );
   return true;
 };

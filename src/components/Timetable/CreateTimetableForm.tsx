@@ -23,34 +23,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Timetable, DayOfWeek } from '@/types/schoolStoreType';
 import { useSchoolStore } from '@/store/schoolStore';
 import { Loader2 } from 'lucide-react';
-
-const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-// Period configuration with times
-const PERIODS = [
-  { period: 1, startTime: '9:00 AM', endTime: '9:45 AM' },
-  { period: 2, startTime: '9:45 AM', endTime: '10:30 AM' },
-  { period: 3, startTime: '11:00 AM', endTime: '11:45 AM' },
-  { period: 4, startTime: '11:45 AM', endTime: '12:30 PM' },
-  { period: 5, startTime: '1:30 PM', endTime: '2:15 PM' },
-  { period: 6, startTime: '2:15 PM', endTime: '3:00 PM' },
-  { period: 7, startTime: '3:15 PM', endTime: '3:45 PM' },
-  { period: 8, startTime: '3:45 PM', endTime: '4:30 PM' }
-];
-
-const timetableSchema = z.object({
-  day_of_week: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], {
-    required_error: 'Please select a day'
-  }),
-  period: z.number().min(1, 'Period must be at least 1').max(8, 'Period cannot exceed 8'),
-  section_id: z.string().min(1, 'Please select a section'),
-  subject_id: z.string().min(1, 'Please select a subject'),
-  teacher_id: z.string().min(1, 'Please select a teacher')
-});
+import { timetableSchema } from '@/components/zod';
+import { DAYS_OF_WEEK, PERIODS } from '../../lib/utils';
 
 type TimetableFormData = z.infer<typeof timetableSchema>;
 
-interface CreateTimetableFormProps {
+interface CreateTimetableFormProps { 
   open: boolean;
   onOpenChange: (open: boolean) => void;
   timetable?: Timetable | null;

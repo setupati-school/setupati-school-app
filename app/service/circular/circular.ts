@@ -7,6 +7,7 @@ import {
   updateCircular,
   searchCircular as searchCircularApi
 } from '../../api/circular/circular.js';
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
 
 interface CircularWithDates extends Record<string, unknown> {
   issued_date?: string;
@@ -19,22 +20,21 @@ export const createCircular = async (req: Request, res: Response) => {
     const id = await addCircular(data);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating circular:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating circular:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const searchCircular = async (req: Request, res: Response) => {
   try {
     const { circular_id: circularId } = req?.params || {};
-    if (!circularId) {
-      return res.status(400).json({ error: 'Circular ID is required' });
-    }
     const circulars = await searchCircularApi(circularId);
     res.status(200).json(circulars);
   } catch (error) {
-    logger.error('Error searching for circulars:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error searching for circulars:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
@@ -44,9 +44,6 @@ export const deleteCircularDetails = async (
 ): Promise<Response | void> => {
   try {
     const { circular_id: circularId } = req?.params || {};
-    if (!circularId) {
-      return res.status(400).json({ error: 'Circular ID is required' });
-    }
     const deleted = await deleteCircular(circularId);
     logger.info('deleted circular data', deleted);
     if (!deleted) {
@@ -54,8 +51,9 @@ export const deleteCircularDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error deleting circular details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting circular details:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
@@ -78,17 +76,15 @@ export const getAllCirculars = async (req: Request, res: Response) => {
 
     res.status(200).json({ circulars });
   } catch (error) {
-    logger.error('Error fetching all circulars:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all circulars:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const updateCircularDetails = async (req: Request, res: Response) => {
   try {
     const { circular_id: circularId } = req?.params || {};
-    if (!circularId) {
-      return res.status(400).json({ error: 'Circular ID is required' });
-    }
     const data = req?.body || {};
     const updated = await updateCircular(circularId, data);
     if (!updated) {
@@ -96,7 +92,8 @@ export const updateCircularDetails = async (req: Request, res: Response) => {
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error updating circular details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating circular details:', message);
+    res.status(httpCode).json({ error: message });
   }
 };

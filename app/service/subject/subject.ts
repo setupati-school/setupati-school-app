@@ -7,6 +7,7 @@ import {
   updateSubject
 } from '../../api/subject/subject.js';
 import logger from '../../utils/logger.js';
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
 
 interface SubjectWithDates extends Record<string, unknown> {
   subject_name?: string;
@@ -21,22 +22,21 @@ export const createSubject = async (req: Request, res: Response) => {
     const id = await addSubject(data);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating subject:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating subject:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const searchSubject = async (req: Request, res: Response) => {
   try {
     const { subject_id: subjectId } = req?.params || {};
-    if (!subjectId) {
-      return res.status(400).json({ error: 'Subject ID is required' });
-    }
     const subjects = await searchSubjectApi(subjectId);
     res.status(200).json(subjects);
   } catch (error) {
-    logger.error('Error searching for subjects:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error searching for subjects:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
@@ -46,9 +46,6 @@ export const deleteSubjectDetails = async (
 ): Promise<Response | void> => {
   try {
     const { subject_id: subjectId } = req?.params || {};
-    if (!subjectId) {
-      return res.status(400).json({ error: 'Subject ID is required' });
-    }
     const deleted = await deleteSubject(subjectId);
     logger.info('deleted subject data', deleted);
     if (!deleted) {
@@ -56,8 +53,9 @@ export const deleteSubjectDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error deleting subject details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting subject details:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
@@ -81,17 +79,15 @@ export const getAllSubjects = async (req: Request, res: Response) => {
 
     res.status(200).json({ subjects });
   } catch (error) {
-    logger.error('Error fetching all subjects:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all subjects:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const updateSubjectDetails = async (req: Request, res: Response) => {
   try {
     const { subject_id: subjectId } = req?.params || {};
-    if (!subjectId) {
-      return res.status(400).json({ error: 'Subject ID is required' });
-    }
     const data = req?.body || {};
     const updated = await updateSubject(subjectId, data);
     if (!updated) {
@@ -99,7 +95,8 @@ export const updateSubjectDetails = async (req: Request, res: Response) => {
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error updating subject details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating subject details:', message);
+    res.status(httpCode).json({ error: message });
   }
 };

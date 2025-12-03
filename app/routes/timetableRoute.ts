@@ -21,27 +21,36 @@ timeTableRouter.post(
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createTimetableSchema),
-  createTimeTable
+  (req, res) => {
+  createTimeTable(req, res);
+  } 
 );
 
 
-timeTableRouter.get('/search/:time_table_id', searchTimeTable);
-
+timeTableRouter.get('/search/:time_table_id', isAuthenticated, (req, res) => {
+  searchTimeTable(req, res);
+});
 timeTableRouter.delete(
   '/delete/:time_table_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
-  deleteTimeTableDetails
+  (req, res) => {
+  deleteTimeTableDetails(req, res);
+  } 
 );
 
-timeTableRouter.get('/all', getAllTimeTablesDetails);
+timeTableRouter.get('/all', isAuthenticated, (req, res) => {
+  getAllTimeTablesDetails(req, res);
+});
 
 timeTableRouter.put(
   '/update/:time_table_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateTimetableSchema),
-  updateTimeTableDetails
+  (req, res) => {
+  updateTimeTableDetails(req, res);
+  } 
 );
 
 export default timeTableRouter;

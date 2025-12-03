@@ -7,45 +7,53 @@ import {
   getAllExamTimeTablesDetails,
   updateExamTimeTableDetails
 } from '../service/examtimetable/examtimetable.js';
-type ExamTimeTable = typeof examTimeTable;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
+import { validateBody } from '../middlewares/validateRequest.js';
+import {
+  createExamTimetableSchema,
+  updateExamTimetableSchema
+} from '../zod/examTimeTableSchema.js';
 
 const examTimeTableRouter = Router();
 
 examTimeTableRouter.post(
   '/create',
-  (req: Request<{ ExamTimeTable: ExamTimeTable }>, res: Response) => {
-    createExamTimeTable(req, res);
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(createExamTimetableSchema),
+  (req,res) =>  {
+    createExamTimeTable(req, res)
   }
 );
 
 examTimeTableRouter.get(
-  '/search/:exam_time_table_id',
-  (req: Request<{ exam_time_table_id: string }>, res: Response) => {
+  '/search/:exam_time_table_id', isAuthenticated,
+  (req, res) => {
     searchExamTimeTable(req, res);
   }
 );
 
 examTimeTableRouter.delete(
   '/delete/:exam_time_table_id',
-  (req: Request<{ exam_time_table_id: string }>, res: Response) => {
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => {
     deleteExamTimeTableDetails(req, res);
   }
 );
 
-examTimeTableRouter.get('/all', (req: Request, res: Response) => {
+examTimeTableRouter.get('/all',isAuthenticated, (req, res) => {
   return getAllExamTimeTablesDetails(req, res);
 });
 
 examTimeTableRouter.put(
   '/update/:exam_time_table_id',
-  (
-    req: Request<{
-      exam_time_table_id: string;
-      ExamTimeTable: Partial<ExamTimeTable>;
-    }>,
-    res: Response
-  ) => {
-    updateExamTimeTableDetails(req, res);
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(updateExamTimetableSchema),
+  (req, res) => {
+  updateExamTimeTableDetails(req, res);
   }
 );
 
