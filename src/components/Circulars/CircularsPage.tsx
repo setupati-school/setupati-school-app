@@ -173,7 +173,7 @@ export const CircularsPage: React.FC = () => {
 
       // Refresh the list
       fetchCirculars();
-    } catch (error: unknown) {
+    } catch (error: any) {
       const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',

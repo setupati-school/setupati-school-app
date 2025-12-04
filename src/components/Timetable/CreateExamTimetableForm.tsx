@@ -146,7 +146,7 @@ export const CreateExamTimetableForm: React.FC<CreateExamTimetableFormProps> = (
       reset();
       onOpenChange(false);
       onSuccess();
-    } catch (error: unknown) {
+    } catch (error: any) {
       const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',

@@ -301,7 +301,7 @@ export const TimetablePage: React.FC = () => {
       });
 
       fetchTimetables();
-    } catch (error: unknown) {
+    } catch (error: any) {
       const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
@@ -362,7 +362,7 @@ export const TimetablePage: React.FC = () => {
       });
 
       fetchExamTimetables();
-    } catch (error: unknown) {
+    } catch (error: any) {
       const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
