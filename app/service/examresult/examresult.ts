@@ -6,12 +6,13 @@ import {
   deleteExamResult,
   getAllExamResults,
   updateExamResult,
-  searchExamResult as searchExamResultApi
+  searchExamResult as searchExamResultApi,
+  getExamResultsByStudentId
 } from '../../api/examresult/examresult.js';
-type ExamResult = typeof examResult;
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
 
 export const createExamResult = async (
-  req: Request<{ ExamResult: ExamResult }>,
+  req: Request,
   res: Response
 ) => {
   try {
@@ -19,37 +20,33 @@ export const createExamResult = async (
     const id = await addExamResult(data);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating exam result:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error(`Error creating exam result: ${message}`);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const searchExamResult = async (
-  req: Request<{ exam_result_id: string }>,
+  req: Request,
   res: Response
 ) => {
   try {
     const { exam_result_id: examResultId } = req.params;
-    if (!examResultId) {
-      return res.status(400).json({ error: 'Exam Result ID is required' });
-    }
     const examResult = await searchExamResultApi(examResultId);
     res.status(200).json(examResult);
   } catch (error) {
-    logger.error('Error searching for exam result:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error(`Error searching for exam result: ${message}`);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const deleteExamResultDetails = async (
-  req: Request<{ exam_result_id: string }>,
+  req: Request,
   res: Response
 ): Promise<Response | void> => {
   try {
     const { exam_result_id: examResultId } = req.params;
-    if (!examResultId) {
-      return res.status(400).json({ error: 'Exam Result ID is required' });
-    }
     const deleted = await deleteExamResult(examResultId);
     logger.info('deleted exam result data', deleted);
     if (!deleted) {
@@ -57,8 +54,9 @@ export const deleteExamResultDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error deleting exam result:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error(`Error deleting exam result: ${message}`);
+    res.status(httpCode).json({ error: message });
   }
 };
 
@@ -67,20 +65,18 @@ export const getAllExamResultsDetails = async (req: Request, res: Response) => {
     const examResults = await getAllExamResults();
     res.status(200).json(examResults);
   } catch (error) {
-    logger.error('Error fetching all exam results:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error(`Error fetching all exam results: ${message}`);
+    res.status(httpCode).json({ error: message });
   }
 };
 
 export const updateExamResultDetails = async (
-  req: Request<{ exam_result_id: string; ExamResult: Partial<ExamResult> }>,
+  req: Request,
   res: Response
 ) => {
   try {
     const { exam_result_id: examResultId } = req.params;
-    if (!examResultId) {
-      return res.status(400).json({ error: 'Exam Result ID is required' });
-    }
     const data = req?.body;
     const updated = await updateExamResult(examResultId, data);
     if (!updated) {
@@ -88,7 +84,23 @@ export const updateExamResultDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error updating exam result:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error(`Error updating exam result: ${message}`);
+    res.status(httpCode).json({ error: message });
+  }
+};
+
+export const searchExamResultsByStudentId = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { student_id: studentId } = req.params;
+    const examResults = await getExamResultsByStudentId(studentId);
+    res.status(200).json(examResults);
+  } catch (error) {
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error(`Error searching exam results by student ID: ${message}`);
+    res.status(httpCode).json({ error: message });
   }
 };

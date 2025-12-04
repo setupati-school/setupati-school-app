@@ -33,6 +33,23 @@ const SignUpForm = React.lazy(() =>
   import('@/components/admin').then((m) => ({ default: m.SignUpForm }))
 );
 
+const StudentResultLookup = React.lazy(() =>
+  import('@/components/Students/StudentResultLookup')
+);
+
+const ExamResultsPage = React.lazy(() =>
+  import('@/components/ExamResults/ExamResultsPage')
+);
+
+const ResultsRoute: React.FC = () => {
+  const { role } = useAuthStore();
+
+  if (role === 'admin') {
+    return <ExamResultsPage />;
+  }
+  return <StudentResultLookup />;
+};
+
 const ComingSoon: React.FC<{ title: string; subtitle: string }> = ({
   title,
   subtitle
@@ -55,7 +72,6 @@ export const router = createBrowserRouter([
     path: '/gallery',
     element: <Gallery />
   },
-
   // Auth pages (login / forgot / reset)
   {
     path: 'auth/login',
@@ -127,6 +143,10 @@ export const router = createBrowserRouter([
       {
         path: '/circulars',
         element: <CircularsPage />
+      },
+      {
+        path: '/results',
+        element: <ResultsRoute />
       }
     ]
   },
