@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '@/lib/axiosConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,8 @@ import {
   Eye,
   Pencil,
   Trash2,
-  FileText
+  FileText,
+  Check, X
 } from 'lucide-react';
 import { firebaseErrorParser } from '../../lib/firebaseErrorParser';
 
@@ -64,7 +65,7 @@ type FilterStatus = 'all' | 'pass' | 'fail';
 
 export const ExamResultsPage: React.FC = () => {
   const { toast } = useToast();
-  const { role } = useAuthStore();
+  const { role, loading: authLoading } = useAuthStore();
   const { subjects, setSubjects } = useSchoolStore();
 
   const isAdmin = role === 'admin';
@@ -81,6 +82,13 @@ export const ExamResultsPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resultToDelete, setResultToDelete] = useState<ExamResultData | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Individual subject editing state
+  const [editingSubjectKey, setEditingSubjectKey] = useState<string | null>(null);
+  const [editingSubjectMarks, setEditingSubjectMarks] = useState<number>(0);
+  const [savingSubject, setSavingSubject] = useState(false);
+  const [deleteSubjectKey, setDeleteSubjectKey] = useState<string | null>(null);
+  const [deleteSubjectDialogOpen, setDeleteSubjectDialogOpen] = useState(false);
 
   // Create a map of subject_id to subject_name
   const subjectNameMap = useMemo(() => {
@@ -216,7 +224,7 @@ export const ExamResultsPage: React.FC = () => {
     setDeleting(true);
 
     try {
-      await api.delete(`/examresults/delete/${resultToDelete?.exam_id}`);
+      await api.delete(`/examresults/delete/${resultToDelete?.id}`);
       toast({
         title: 'Success',
         description: 'Exam result deleted successfully'
@@ -244,6 +252,123 @@ export const ExamResultsPage: React.FC = () => {
     setCreateModalOpen(open);
     if (!open) {
       setEditingResult(null);
+    }
+  };
+
+  // Handle individual subject edit
+  const handleEditSubject = (key: string, currentMarks: number) => {
+    setEditingSubjectKey(key);
+    setEditingSubjectMarks(currentMarks);
+  };
+
+  const handleCancelEditSubject = () => {
+    setEditingSubjectKey(null);
+    setEditingSubjectMarks(0);
+  };
+
+  const handleSaveSubject = async () => {
+    if (!selectedResult || !editingSubjectKey) return;
+
+    setSavingSubject(true);
+    try {
+      // Create updated exam_result with new marks
+      const updatedExamResult = { ...selectedResult.exam_result };
+      updatedExamResult[editingSubjectKey] = editingSubjectMarks;
+
+      // Recalculate total
+      const subjectEntries = Object.entries(updatedExamResult).filter(
+        ([key]) => key.startsWith('subject_') && typeof updatedExamResult[key] === 'number'
+      );
+      const newTotal = subjectEntries.reduce((sum, [, marks]) => sum + (marks as number), 0);
+      updatedExamResult.total = newTotal;
+
+      // Recalculate pass/fail (assuming 35 is pass threshold per subject)
+      const allPassed = subjectEntries.every(([, marks]) => (marks as number) >= 35);
+      updatedExamResult.pass_or_fail = allPassed ? 'pass' : 'fail';
+
+      const payload = {
+        ...selectedResult,
+        exam_result: updatedExamResult,
+        updated_at: new Date().toISOString()
+      };
+
+      await api.put(`/examresults/update/${selectedResult.id}`, payload);
+
+      // Update local state
+      setSelectedResult({ ...selectedResult, exam_result: updatedExamResult });
+      setEditingSubjectKey(null);
+      setEditingSubjectMarks(0);
+      fetchResults();
+
+      toast({
+        title: 'Success',
+        description: 'Subject marks updated successfully'
+      });
+    } catch (error: any) {
+      const { message } = firebaseErrorParser(error);
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingSubject(false);
+    }
+  };
+
+  // Handle individual subject delete
+  const handleDeleteSubjectClick = (key: string) => {
+    setDeleteSubjectKey(key);
+    setDeleteSubjectDialogOpen(true);
+  };
+
+  const handleDeleteSubjectConfirm = async () => {
+    if (!selectedResult || !deleteSubjectKey) return;
+
+    setSavingSubject(true);
+    try {
+      // Create updated exam_result without the deleted subject
+      const updatedExamResult = { ...selectedResult.exam_result };
+      delete updatedExamResult[deleteSubjectKey];
+
+      // Recalculate total
+      const subjectEntries = Object.entries(updatedExamResult).filter(
+        ([key]) => key.startsWith('subject_') && typeof updatedExamResult[key] === 'number'
+      );
+      const newTotal = subjectEntries.reduce((sum, [, marks]) => sum + (marks as number), 0);
+      updatedExamResult.total = newTotal;
+
+      // Recalculate pass/fail
+      const allPassed = subjectEntries.length > 0 && subjectEntries.every(([, marks]) => (marks as number) >= 35);
+      updatedExamResult.pass_or_fail = allPassed ? 'pass' : 'fail';
+
+      const payload = {
+        ...selectedResult,
+        exam_result: updatedExamResult,
+        updated_at: new Date().toISOString()
+      };
+
+      await api.put(`/examresults/update/${selectedResult.id}`, payload);
+
+      // Update local state
+      setSelectedResult({ ...selectedResult, exam_result: updatedExamResult });
+      setDeleteSubjectKey(null);
+      setDeleteSubjectDialogOpen(false);
+      fetchResults();
+
+      toast({
+        title: 'Success',
+        description: 'Subject deleted successfully'
+      });
+    } catch (error: any) {
+      const { message } = firebaseErrorParser(error);
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingSubject(false);
     }
   };
 
@@ -574,18 +699,83 @@ export const ExamResultsPage: React.FC = () => {
                     <tr className="bg-muted/50 border-b">
                       <th className="text-left py-2 px-3">Subject</th>
                       <th className="text-right py-2 px-3">Marks</th>
+                      {isAdmin && <th className="text-right py-2 px-3 w-24">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {getSubjectEntries(selectedResult.exam_result).map(([key, marks]) => (
                       <tr key={key} className="border-b last:border-b-0">
                         <td className="py-2 px-3">{formatSubjectName(key)}</td>
-                        <td className="py-2 px-3 text-right font-medium">{marks as number}</td>
+                        <td className="py-2 px-3 text-right font-medium">
+                          {editingSubjectKey === key ? (
+                            <Input
+                              type="number"
+                              value={editingSubjectMarks}
+                              onChange={(e) => setEditingSubjectMarks(Number(e.target.value))}
+                              className="w-20 h-7 text-right inline-block"
+                              min={0}
+                              max={100}
+                              autoFocus
+                            />
+                          ) : (
+                            marks as number
+                          )}
+                        </td>
+                        {isAdmin && (
+                          <td className="py-2 px-3 text-right">
+                            {editingSubjectKey === key ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-green-600 hover:text-green-700"
+                                  onClick={handleSaveSubject}
+                                  disabled={savingSubject}
+                                  title="Save"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={handleCancelEditSubject}
+                                  disabled={savingSubject}
+                                  title="Cancel"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleEditSubject(key, marks as number)}
+                                  title="Edit Marks"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteSubjectClick(key)}
+                                  title="Delete Subject"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                     <tr className="bg-muted/30 font-semibold">
                       <td className="py-2 px-3">Total</td>
                       <td className="py-2 px-3 text-right">{selectedResult.exam_result.total}</td>
+                      {isAdmin && <td></td>}
                     </tr>
                   </tbody>
                 </table>
@@ -606,8 +796,32 @@ export const ExamResultsPage: React.FC = () => {
             </div>
           )}
 
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel>Close</AlertDialogCancel>
+            {isAdmin && selectedResult && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    handleEdit(selectedResult);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    handleDeleteClick(selectedResult);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -638,6 +852,29 @@ export const ExamResultsPage: React.FC = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Subject Confirmation Dialog */}
+      <AlertDialog open={deleteSubjectDialogOpen} onOpenChange={setDeleteSubjectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Subject</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{deleteSubjectKey ? formatSubjectName(deleteSubjectKey) : ''}&quot;
+              from this exam result? The total marks will be recalculated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingSubject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSubjectConfirm}
+              disabled={savingSubject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {savingSubject ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

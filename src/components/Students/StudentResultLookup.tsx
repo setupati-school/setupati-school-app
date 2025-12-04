@@ -7,6 +7,7 @@ import { Search, Award, Calendar, User, FileText } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { firebaseErrorParser } from '../../lib/firebaseErrorParser';
 import { useToast } from '@/hooks/use-toast';
+import api from '@/lib/axiosConfig';
 
 interface ExamResultData {
   created_at: string;
@@ -59,24 +60,24 @@ export const StudentResultLookup: React.FC = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-       const response = await api.get<any>('/subjects/all');
+        const response = await api.get<any>('/subjects/all');
       
-      const data = response?.data;
-      const subjectList = Array.isArray(data)
-        ? data.map((item: { id: string; subject?: { subject_name: string; subject_id?: string } }) => ({
-            id: item.id,
-            subject_name: item.subject?.subject_name || 'Unknown',
-            subject_id: item.subject?.subject_id || item.id
-          }))
-        : [];
+        const data = response?.data;
+        const subjectList = Array.isArray(data)
+          ? data.map((item: { id: string; subject?: { subject_name: string; subject_id?: string } }) => ({
+              id: item.id,
+              subject_name: item.subject?.subject_name || 'Unknown',
+              subject_id: item.subject?.subject_id || item.id
+            }))
+          : [];
       
-      setSubjects(subjectList);
+        setSubjects(subjectList);
       } catch ( error: any) {
-         const { message } = firebaseErrorParser(error);
-          toast({
-            title: 'Error',
-            description: message,
-          });
+        const { message } = firebaseErrorParser(error);
+        toast({
+          title: 'Error',
+          description: message,
+        });
       }
     };
     fetchSubjects();

@@ -161,7 +161,7 @@ export const CreateExamResultForm: React.FC<CreateExamResultFormProps> = ({
       };
 
       if (isEditing && examResult) {
-        await api.put(`/examresults/update/${examResult?.exam_id}`, payload);
+        await api.put(`/examresults/update/${examResult?.id}`, payload);
         toast({
           title: 'Success',
           description: 'Exam result updated successfully'
