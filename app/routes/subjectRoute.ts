@@ -1,3 +1,4 @@
+import { Router } from 'express';
 import {
   createSubject,
   searchSubject,
@@ -5,45 +6,51 @@ import {
   getAllSubjects,
   updateSubjectDetails
 } from '../service/subject/subject.js';
-import { Router, Request, Response } from 'express';
-import type subject from '@setupati-school/setupati-types/models';
-type Subject = typeof subject;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
+import { validateBody } from '../middlewares/validateRequest.js';
+import {
+  createSubjectSchema,
+  updateSubjectSchema
+} from '../zod/subjectSchema.js';
 
 const subjectRouter = Router();
 
 subjectRouter.post(
   '/create',
-  (req: Request<{ Subject: Subject }>, res: Response) => {
-    createSubject(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(createSubjectSchema),
+  (req,res) => {
+  createSubject(req, res);
+  } 
 );
 
-subjectRouter.get(
-  '/search/:subject_id',
-  (req: Request<{ subject_id: string }>, res: Response) => {
-    searchSubject(req, res);
-  }
-);
+subjectRouter.get('/search/:subject_id', isAuthenticated, (req, res) => {
+  searchSubject(req, res);
+} );
 
 subjectRouter.delete(
   '/delete/:subject_id',
-  (req: Request<{ subject_id: string }>, res: Response) => {
-    deleteSubjectDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => {
+  deleteSubjectDetails(req, res);
+  } 
 );
 
-subjectRouter.get('/all', (req: Request, res: Response) => {
-  return getAllSubjects(req, res);
+subjectRouter.get('/all', isAuthenticated, (req, res) => {
+  getAllSubjects(req, res);
 });
 
 subjectRouter.put(
   '/update/:subject_id',
-  (
-    req: Request<{ subject_id: string; Subject: Partial<Subject> }>,
-    res: Response
-  ) => {
-    updateSubjectDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(updateSubjectSchema),
+  (req, res) => {
+  updateSubjectDetails(req, res);
+  } 
 );
 
 export default subjectRouter;

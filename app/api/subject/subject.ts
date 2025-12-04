@@ -2,7 +2,7 @@ import { db } from '../../firebase.js';
 import type subject from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from './../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
+import { mapDocsWithKey, now } from '../../utils/helper.js';
 type Subject = typeof subject;
 
 if (!db)
@@ -14,8 +14,13 @@ if (!db)
 const subjectCollection = db.collection('subjects');
 
 export const addSubject = async (data: Subject): Promise<string> => {
-  const docRef = await subjectCollection.add(data);
-  logger.info(`Subject added with ID: ${docRef.id}`);
+  const subjectData = {
+    ...data,
+    created_at: now,
+    updated_at: now
+  };
+  const docRef = await subjectCollection.add(subjectData);
+  logger.info(`Subject added with ID: ${docRef?.id}`);
   return docRef.id;
 };
 
@@ -33,17 +38,16 @@ export const getSubject = async (
 };
 
 export const deleteSubject = async (subjectId: string): Promise<boolean> => {
-  const subjectData = await getSubject(subjectId);
-  if (!subjectData.length || subjectData[0].subject === null) {
-    logger.info(`No subjects found with ID: ${subjectId}`);
+  const docRef = subjectCollection.doc(subjectId);
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
+    logger.info(`No subject found to delete with ID: ${subjectId}`);
     return false;
   }
-  const deletePromises = subjectData.map(({ id }) => {
-    logger.info(`Deleting subject with ID: ${id}`);
-    return subjectCollection.doc(id).delete();
-  });
-  await Promise.all(deletePromises);
-  logger.info(`Deleted ${subjectData.length} subject(s) with ID: ${subjectId}`);
+
+  await docRef.delete();
+  logger.info(`Deleted subject with ID: ${subjectId}`);
   return true;
 };
 
@@ -81,16 +85,22 @@ export const updateSubject = async (
   subjectId: string,
   data: Partial<Subject>
 ): Promise<boolean> => {
-  const subjectData = await getSubject(subjectId);
-  if (!subjectData.length || subjectData[0].subject === null) {
-    logger.info(`No subjects found with subject ID: ${subjectId}`);
+  logger.info(`Updating subject with ID: ${subjectId}`);
+
+  const docRef = subjectCollection.doc(subjectId);
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
+    logger.info(`No subject found to update with ID: ${subjectId}`);
     return false;
   }
-  const updatePromises = subjectData.map(({ id }) => {
-    const subjectRef = subjectCollection.doc(id);
-    return subjectRef.update(data);
-  });
-  await Promise.all(updatePromises);
-  logger.info(`Updated ${subjectData.length} subject(s) with ID: ${subjectId}`);
+
+  const updateData = {
+    ...data,
+    updated_at: now
+  };
+
+  await docRef.update(updateData);
+  logger.info(`Updated subject with ID: ${subjectId}`);
   return true;
 };

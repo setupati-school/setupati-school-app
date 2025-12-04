@@ -50,8 +50,11 @@ export interface Student {
 
 export interface Subject {
   id: string;
+  subject_id?: string;
   subject_name: string;
   grade_id: string;
+  teacher_id?: string;
+  description?: string;
   created_at: string;
   updated_at: string;
 }
@@ -68,9 +71,13 @@ export interface Section {
 
 export interface Grade {
   id: string;
+  grade_id?: string;
   grade_name: string;
   section_ids: string[];
+  subject_ids: string[];
+  subject_name: string[];
   ahm_staff_id: string;
+  teacher_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -111,6 +118,55 @@ export interface Homework {
   updated_at: string;
 }
 
+export type DayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday';
+
+export interface Timetable {
+  id?: string;
+  timetable_id?: string;
+  day_of_week: DayOfWeek;
+  period: number;
+  section_id: string;
+  subject_id: string;
+  teacher_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// API response wrapper for timetable
+export interface TimetableResponse {
+  id: string;
+  timeTable: Timetable;
+}
+
+export type ExamType = 'Unit Test' | 'Quarterly' | 'Half-Yearly' | 'Annual';
+
+export interface ExamTimetable {
+  id?: string;
+  exam_time_table_id?: string;
+  grade_id: string;
+  subject_id: string;
+  date?: string;
+  exam_date?: string;
+  start_date?: string;
+  start_time?: string;
+  end_time?: string;
+  exam_type: ExamType;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// API response wrapper for exam timetable
+export interface ExamTimetableResponse {
+  id: string;
+  examTimeTable: ExamTimetable;
+}
+
 // Store interface
 export interface SchoolStore {
   // Current user
@@ -125,6 +181,8 @@ export interface SchoolStore {
   attendance: Attendance[];
   circulars: Circular[];
   homework: Homework[];
+  timetables: Timetable[];
+  examTimetables: ExamTimetable[];
 
   // UI State
   activeView: string;
@@ -146,6 +204,8 @@ export interface SchoolStore {
   setAttendance: (attendance: Attendance[]) => void;
   setCirculars: (circulars: Circular[]) => void;
   setHomework: (homework: Homework[]) => void;
+  setTimetables: (timetables: Timetable[]) => void;
+  setExamTimetables: (examTimetables: ExamTimetable[]) => void;
 
   // Statistics
   getStudentCount: () => number;
