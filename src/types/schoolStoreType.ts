@@ -213,5 +213,13 @@ export interface SchoolStore {
   getPresentStudentsToday: () => number;
   getRecentCirculars: () => Circular[];
 
+  // Student-specific methods
+  getMyStudent: () => Student | null;
+  getMyAttendance: () => Attendance[];
+  getMyTimetable: () => Timetable[];
+  getMySubjects: () => Subject[];
+  getMySection: () => Section | null;
+  getMyGrade: () => Grade | null;
+
   initCurrentUser: () => void;
 }

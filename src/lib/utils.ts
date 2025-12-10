@@ -2,6 +2,8 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { getAuth, signOut } from 'firebase/auth';
 import { DayOfWeek } from '@/types/schoolStoreType';
+import type { SubjectMark } from '@/types/type';
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -105,3 +107,92 @@ export const formatTime = (time: string) => {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
 };
+
+export const getGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
+
+export const getInitials = (name?: string | null): string => {
+  if (!name) return 'ST';
+  return (
+    name
+      ?.split(' ')
+      ?.map((n) => n?.[0] ?? '')
+      ?.join('')
+      ?.toUpperCase()
+      ?.slice(0, 2) || 'ST'
+  );
+};
+
+export const getFirstName = (name?: string | null, fallback = 'Student'): string => {
+  return name?.split(' ')?.[0] ?? fallback;
+};
+
+type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
+
+export const getAttendanceStatusBadge = (
+  rate: number
+): { label: string; variant: BadgeVariant } => {
+  if (rate >= 90) return { label: 'Excellent', variant: 'default' };
+  if (rate >= 75) return { label: 'Good', variant: 'secondary' };
+  if (rate >= 60) return { label: 'Average', variant: 'outline' };
+  return { label: 'Low', variant: 'destructive' };
+};
+
+export const getGradeForPercentage = (
+  pct: number
+): { grade: string; variant: BadgeVariant } => {
+  if (pct >= 90) return { grade: 'A+', variant: 'default' };
+  if (pct >= 80) return { grade: 'A', variant: 'default' };
+  if (pct >= 70) return { grade: 'B', variant: 'secondary' };
+  if (pct >= 60) return { grade: 'C', variant: 'secondary' };
+  if (pct >= 50) return { grade: 'D', variant: 'outline' };
+  return { grade: 'F', variant: 'destructive' };
+};
+
+export const calculateExamTotals = (
+  subjects?: SubjectMark[]
+): { totalMarks: number; totalMax: number; pct: number } => {
+  if (!subjects || !Array.isArray(subjects)) {
+    return { totalMarks: 0, totalMax: 0, pct: 0 };
+  }
+  const totalMarks =
+    subjects?.reduce((s, x) => s + (Number(x?.marks) || 0), 0) ?? 0;
+  const totalMax =
+    subjects?.reduce((s, x) => s + (Number(x?.maxMarks ?? 100) || 100), 0) ?? 0;
+  const pct = totalMax > 0 ? Math.round((totalMarks / totalMax) * 100) : 0;
+  return { totalMarks, totalMax, pct };
+};
+
+export const calculateAttendanceStats = (
+  records?: { status?: string }[]
+): { total: number; present: number; absent: number; late: number; rate: number } => {
+  const total = records?.length ?? 0;
+  const present = records?.filter((r) => r?.status === 'present')?.length ?? 0;
+  const absent = records?.filter((r) => r?.status === 'absent')?.length ?? 0;
+  const late = records?.filter((r) => r?.status === 'late')?.length ?? 0;
+  const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+  return { total, present, absent, late, rate };
+};
+
+export const attendanceRate =(studentCount: number, presentToday: number): number=> {
+return   studentCount > 0 ? Math.round((presentToday / studentCount) * 100) : 0;
+};
+
+export const getSection = (sectionId: string, sections: any[]) => {
+    return sections.find((s) => s?.id === sectionId);
+};
+
+export const getGrade = (sectionId: string, grades: any[], sections: any[]) => {
+  const section = getSection(sectionId,sections);
+  if (!section) return null;
+  return grades.find((g) => g?.id === section.grade_id);
+};
+
+
+
+  
+

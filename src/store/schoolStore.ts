@@ -166,7 +166,61 @@ export const useSchoolStore = create<SchoolStore>()(
                 new Date(b.issued_date).getTime() -
                 new Date(a.issued_date).getTime()
             )
-            .slice(0, 5)
+            .slice(0, 5),
+
+        // Student-specific methods
+        getMyStudent: () => {
+          const state = get();
+          const currentUser = state.currentUser;
+          if (!currentUser || currentUser.role !== 'student') return null;
+          // Match by user id or find student with matching email/id
+          return (
+            state.students.find(
+              (s) => s.id === currentUser.id || s.id === currentUser.email
+            ) ?? state.students[0] ?? null
+          );
+        },
+
+        getMyAttendance: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return [];
+          return state.attendance.filter((a) => a.student_id === student.id);
+        },
+
+        getMyTimetable: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return [];
+          return state.timetables.filter(
+            (t) => t.section_id === student.section_id
+          );
+        },
+
+        getMySubjects: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return [];
+          return state.subjects.filter((s) =>
+            student.subject_ids?.includes(s.id)
+          );
+        },
+
+        getMySection: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return null;
+          return (
+            state.sections.find((s) => s.id === student.section_id) ?? null
+          );
+        },
+
+        getMyGrade: () => {
+          const state = get();
+          const section = state.getMySection?.() ?? null;
+          if (!section) return null;
+          return state.grades.find((g) => g.id === section.grade_id) ?? null;
+        }
       }),
       {
         name: 'school-store'
