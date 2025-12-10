@@ -5,41 +5,65 @@ import {
   searchExamResult,
   updateExamResultDetails,
   getAllExamResultsDetails,
-  deleteExamResultDetails
+  deleteExamResultDetails,
+  searchExamResultsByStudentId
 } from '../service/examresult/examresult.js';
-type ExamResult = typeof examResult;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
+import { validateBody } from '../middlewares/validateRequest.js';
+import {
+  createExamResultSchema,
+  updateExamResultSchema
+} from '../zod/examResultSchema.js';
 
 const examResultRouter = Router();
 
 examResultRouter.post(
   '/create',
-  (req: Request<{ ExamResult: ExamResult }>, res: Response) => {
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(createExamResultSchema),
+  (req: Request, res: Response) => {
     createExamResult(req, res);
   }
 );
 
 examResultRouter.get(
   '/search/:exam_result_id',
-  (req: Request<{ exam_result_id: string }>, res: Response) => {
+  isAuthenticated,
+  (req: Request, res: Response) => {
     searchExamResult(req, res);
   }
 );
 
 examResultRouter.delete(
   '/delete/:exam_result_id',
-  (req: Request<{ exam_result_id: string }>, res: Response) => {
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req: Request, res: Response) => {
     deleteExamResultDetails(req, res);
   }
 );
 
-examResultRouter.get('/all', (req: Request, res: Response) => {
+examResultRouter.get('/all', isAuthenticated, (req: Request, res: Response) => {
   return getAllExamResultsDetails(req, res);
 });
 
+examResultRouter.get(
+  '/student/:student_id',
+  isAuthenticated,
+  (req: Request, res: Response) => {
+    searchExamResultsByStudentId(req, res);
+  }
+);
+
 examResultRouter.put(
   '/update/:exam_result_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(updateExamResultSchema),
   (
-    req: Request<{ exam_result_id: string; ExamResult: Partial<ExamResult> }>,
+    req: Request,
     res: Response
   ) => {
     updateExamResultDetails(req, res);

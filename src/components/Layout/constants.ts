@@ -7,7 +7,8 @@ import {
   FileText,
   ClipboardCheck,
   Settings,
-  UserRoundPlus
+  UserRoundPlus,
+  Award
 } from 'lucide-react';
 
 export const TeacherNavigationItems = [
@@ -105,6 +106,12 @@ export const StudentNavigationItems = [
     to: '/circulars'
   },
   {
+    id: 'results',
+    label: 'Results',
+    icon: Award,
+    to: '/results'
+  },
+  {
     id: 'settings',
     label: 'Settings',
     icon: Settings,
@@ -154,6 +161,12 @@ export const AdminNavigationItems = [
     label: 'Circulars',
     icon: FileText,
     to: '/circulars'
+  },
+  {
+    id: 'results',
+    label: 'Results',
+    icon: Award,
+    to: '/results'
   },
   {
     id: 'account-creation',

@@ -113,7 +113,7 @@ export const CreateSubjectForm: React.FC<CreateSubjectFormProps> = ({
       reset();
       onOpenChange(false);
       onSuccess();
-    } catch (error: unknown) {
+    } catch (error: any) {
       const { message } = firebaseErrorParser(error);
       toast({
         title: 'Error',
