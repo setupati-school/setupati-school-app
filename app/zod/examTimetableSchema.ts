@@ -29,7 +29,7 @@ export const createExamTimetableSchema = z.object({
 export const updateExamTimetableSchema = createExamTimetableSchema.partial();
 
 export const examTimetableIdParamSchema = z.object({
-  exam_time_table_id: z
+  id: z
     .string({ required_error: 'Exam Timetable ID is required' })
     .min(1, 'Exam Timetable ID is required')
 });

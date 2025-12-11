@@ -1,9 +1,8 @@
 import { db } from '../../firebase.js';
-import type examTimeTable from '@setupati-school/setupati-types/models';
+import type { ExamTimeTable } from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
 import { mapDocsWithKey, now } from '../../utils/helper.js';
-type ExamTimeTable = typeof examTimeTable;
 
 if (!db)
   throw new AppError(
@@ -18,7 +17,7 @@ export const addExamTimeTable = async (
 ): Promise<string> => {
   const docRef = await examTimeTableCollection.add({
     ...data,
-    exam_time_table_id: data?.exam_time_table_id || `exam_tt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: data?.id || `exam_tt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     created_at: data?.created_at || now,
     updated_at: now
   });

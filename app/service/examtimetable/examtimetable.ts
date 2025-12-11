@@ -29,7 +29,7 @@ export const searchExamTimeTable = async (
   res: Response
 ) => {
   try {
-    const { exam_time_table_id: examTimeTableId } = req?.params || {};
+    const { id: examTimeTableId } = req?.params || {};
     const examTimeTable = await searchExamTimeTableApi(examTimeTableId);
     res.status(200).json(examTimeTable);
   } catch (error) {
@@ -44,7 +44,7 @@ export const deleteExamTimeTableDetails = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { exam_time_table_id: examTimeTableId } = req?.params || {};
+    const { id: examTimeTableId } = req?.params || {};
     const deleted = await deleteExamTimeTable(examTimeTableId);
     logger.info('deleted exam time table data', deleted);
     if (!deleted) {
@@ -77,7 +77,7 @@ export const updateExamTimeTableDetails = async (
   res: Response
 ) => {
   try {
-    const { exam_time_table_id: examTimeTableId } = req?.params || {};
+    const { id: examTimeTableId } = req?.params || {};
     if (!examTimeTableId) {
       return res.status(400).json({ error: 'Exam Time Table ID is required' });
     }

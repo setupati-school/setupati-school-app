@@ -1,3 +1,4 @@
+import type { ExamTimeTable } from '@setupati-school/setupati-types/models';
 export interface User {
   id: string;
   name: string;
@@ -146,25 +147,10 @@ export interface TimetableResponse {
 
 export type ExamType = 'Unit Test' | 'Quarterly' | 'Half-Yearly' | 'Annual';
 
-export interface ExamTimetable {
-  id?: string;
-  exam_time_table_id?: string;
-  grade_id: string;
-  subject_id: string;
-  date?: string;
-  exam_date?: string;
-  start_date?: string;
-  start_time?: string;
-  end_time?: string;
-  exam_type: ExamType;
-  created_at?: string;
-  updated_at?: string;
-}
-
 // API response wrapper for exam timetable
-export interface ExamTimetableResponse {
+export interface ExamTimeTableResponse {
   id: string;
-  examTimeTable: ExamTimetable;
+  ExamTimeTable: ExamTimeTable;
 }
 
 // Store interface
@@ -182,7 +168,7 @@ export interface SchoolStore {
   circulars: Circular[];
   homework: Homework[];
   timetables: Timetable[];
-  examTimetables: ExamTimetable[];
+  ExamTimeTables: ExamTimeTable[];
 
   // UI State
   activeView: string;
@@ -205,7 +191,7 @@ export interface SchoolStore {
   setCirculars: (circulars: Circular[]) => void;
   setHomework: (homework: Homework[]) => void;
   setTimetables: (timetables: Timetable[]) => void;
-  setExamTimetables: (examTimetables: ExamTimetable[]) => void;
+  setExamTimeTables: (ExamTimeTables: ExamTimeTable[]) => void;
 
   // Statistics
   getStudentCount: () => number;

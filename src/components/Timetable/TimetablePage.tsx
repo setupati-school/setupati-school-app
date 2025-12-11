@@ -353,7 +353,7 @@ export const TimetablePage: React.FC = () => {
     setExamDeleting(true);
 
     try {
-      const examId = examTimetableToDelete?.examTimeTable?.exam_time_table_id || examTimetableToDelete?.id;
+      const examId = examTimetableToDelete?.examTimeTable?.id || examTimetableToDelete?.id;
       await api.delete(`/exam-timetables/delete/${examId}`);
 
       toast({
@@ -785,7 +785,7 @@ export const TimetablePage: React.FC = () => {
                       </thead>
                       <tbody>
                         {filteredExamTimetables?.map((exam, index) => (
-                          <tr key={exam?.exam_time_table_id || exam?.id || index} className="hover:bg-muted/30">
+                          <tr key={exam?.id || exam?.id || index} className="hover:bg-muted/30">
                             <td className="border-b p-3 text-center">
                               <span className="font-medium text-muted-foreground">{index + 1}</span>
                             </td>

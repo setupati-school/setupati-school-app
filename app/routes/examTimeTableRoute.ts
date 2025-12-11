@@ -27,14 +27,14 @@ examTimeTableRouter.post(
 );
 
 examTimeTableRouter.get(
-  '/search/:exam_time_table_id', isAuthenticated,
+  '/search/:id', isAuthenticated,
   (req, res) => {
     searchExamTimeTable(req, res);
   }
 );
 
 examTimeTableRouter.delete(
-  '/delete/:exam_time_table_id',
+  '/delete/:id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   (req, res) => {
@@ -47,7 +47,7 @@ examTimeTableRouter.get('/all',isAuthenticated, (req, res) => {
 });
 
 examTimeTableRouter.put(
-  '/update/:exam_time_table_id',
+  '/update/:id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateExamTimetableSchema),
