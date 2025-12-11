@@ -52,7 +52,7 @@ export const CreateExamTimetableForm: React.FC<CreateExamTimetableFormProps> = (
   const { subjects, grades } = useSchoolStore();
   const [loading, setLoading] = useState(false);
   const [selectedGradeId, setSelectedGradeId] = useState<string>(preSelectedGrade || '');
-  const isEditing = !!(examTimetable?.id);
+  const isEditing = !!(examTimetable?.exam_time_table_id || examTimetable?.id);
 
   const {
     handleSubmit,
@@ -129,7 +129,7 @@ export const CreateExamTimetableForm: React.FC<CreateExamTimetableFormProps> = (
       };
 
       if (isEditing && examTimetable) {
-        const examTimetableId = examTimetable?.id || examTimetable?.id;
+        const examTimetableId = examTimetable?.exam_time_table_id || examTimetable?.id;
         await api.put(`/exam-timetables/update/${examTimetableId}`, payload);
         toast({
           title: 'Success',
