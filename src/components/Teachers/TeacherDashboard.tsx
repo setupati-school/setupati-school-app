@@ -10,6 +10,7 @@ import {
   Calendar,
   BookOpen
 } from 'lucide-react';
+import { attendanceRate } from '../../lib/utils';
 
 export const TeacherDashboard = () => {
   const {
@@ -23,9 +24,6 @@ export const TeacherDashboard = () => {
   const teacherCount = getTeacherCount();
   const presentToday = getPresentStudentsToday();
   const recentCirculars = getRecentCirculars();
-
-  const attendanceRate =
-    studentCount > 0 ? Math.round((presentToday / studentCount) * 100) : 0;
 
   return (
     <div className="space-y-6">
