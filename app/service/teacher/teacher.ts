@@ -6,12 +6,11 @@ import {
   searchTeacher as searchTeacherApi,
   updateTeacher
 } from '../../api/teacher/teacher.js';
-import type teacher from '@setupati-school/setupati-types/models';
 import logger from '../../utils/logger.js';
-type Teacher = typeof teacher;
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
 
 export const createTeacher = async (
-  req: Request<{ Teacher: Teacher }>,
+  req: Request,
   res: Response
 ) => {
   try {
@@ -19,37 +18,33 @@ export const createTeacher = async (
     const id = await addTeacher(data);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating teacher:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating teacher:', message);
+    res.status(httpCode || 500).json({ error: message || 'Internal Server Error' });
   }
 };
 
 export const searchTeacher = async (
-  req: Request<{ teacher_id: string }>,
+  req: Request,
   res: Response
 ) => {
   try {
     const { teacher_id: teacherId } = req.params;
-    if (!teacherId) {
-      return res.status(400).json({ error: 'Teacher ID is required' });
-    }
     const teachers = await searchTeacherApi(teacherId);
     res.status(200).json(teachers);
   } catch (error) {
-    logger.error('Error searching for teachers:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error searching for teachers:', message);
+    res.status(httpCode || 500).json({ error: message || 'Internal Server Error' });
   }
 };
 
 export const deleteTeacherDetails = async (
-  req: Request<{ teacher_id: string }>,
+  req: Request,
   res: Response
 ): Promise<Response | void> => {
   try {
     const { teacher_id: teacherId } = req.params;
-    if (!teacherId) {
-      return res.status(400).json({ error: 'Teacher ID is required' });
-    }
     const deleted = await deleteTeacher(teacherId);
     logger.info('deleted teacher data', deleted);
     if (!deleted) {
@@ -57,8 +52,9 @@ export const deleteTeacherDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error deleting teacher details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting teacher details:', message);
+    res.status(httpCode || 500).json({ error: message || 'Internal Server Error' });
   }
 };
 
@@ -67,20 +63,18 @@ export const getAllTeachers = async (req: Request, res: Response) => {
     const teachers = await getAllTeacherDetails();
     res.status(200).json(teachers);
   } catch (error) {
-    logger.error('Error fetching all teachers:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all teachers:', message);
+    res.status(httpCode || 500).json({ error: message || 'Internal Server Error' });
   }
 };
 
 export const updateTeacherDetails = async (
-  req: Request<{ teacher_id: string; Teacher: Partial<Teacher> }>,
+  req: Request,
   res: Response
 ) => {
   try {
     const { teacher_id: teacherId } = req.params;
-    if (!teacherId) {
-      return res.status(400).json({ error: 'Teacher ID is required' });
-    }
     const data = req?.body;
     const updated = await updateTeacher(teacherId, data);
     if (!updated) {
@@ -88,7 +82,8 @@ export const updateTeacherDetails = async (
     }
     res.status(204).json({});
   } catch (error) {
-    logger.error('Error updating teacher details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating teacher details:', message);
+    res.status(httpCode || 500).json({ error: message || 'Internal Server Error' });
   }
 };

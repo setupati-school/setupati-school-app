@@ -21,6 +21,7 @@ import {
 import { useAuthStore, useSchoolStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { StudentDashboard } from './components/Students';
+import { TeachersPage } from './components/Teachers/TeachersPage';
 
 // ---------- Lazy-loaded layout & dashboards ----------
 const Main = React.lazy(() =>
@@ -107,10 +108,7 @@ export const router = createBrowserRouter([
       {
         path: '/teachers',
         element: (
-          <ComingSoon
-            title="Teacher Section"
-            subtitle="Teacher module coming soon..."
-          />
+          <TeachersPage />
         )
       },
       {
