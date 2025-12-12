@@ -18,7 +18,7 @@ import { AdminQuickActions } from './AdminQuickActions';
 import { StudentManagement } from './StudentManagement';
 import { AdminStudentView } from './AdminStudentView';
 import type { Student } from '@/types/schoolStoreType';
-import { getGreeting } from '../../Students/utils';
+import { getGreeting } from '../../../lib/utils';
 import { attendanceRate } from '../../../lib/utils'
 
 export const AdminDashboard = () => {

@@ -10,10 +10,16 @@ export interface User {
 
 export interface Teacher {
   id: string;
-  subject_ids: string[];
-  section_ids: string[];
-  first_name: string;
-  last_name: string;
+  subject_ids?: string[];
+  section_ids?: string[];
+  subject_id?: string[];
+  section_id?: string[];
+  first_name?: string;
+  last_name?: string;
+  f_name?: string;
+  l_name?: string;
+  email?: string;
+  phone_num?: string;
   dob: string;
   gender: string;
   designation: string;
