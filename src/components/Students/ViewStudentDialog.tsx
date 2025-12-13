@@ -33,10 +33,8 @@ export const ViewStudentDialog = ({
   const { sections, grades } = useSchoolStore();
 
   if (!student) return null;
-
-  const fullName = `${student.f_name} ${student.l_name}`.trim() || 'Unknown';
-  const gradeObj = getGrade(student.grade_id, grades, sections);
-  const sectionObj = getSection(student.section_id, grades, sections);
+  const gradeObj = getGrade(student?.grade_id, grades, sections);
+  const sectionObj = getSection(student?.section_id, grades);
 
 
   return (

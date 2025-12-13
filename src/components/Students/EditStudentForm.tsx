@@ -61,23 +61,23 @@ export const EditStudentForm = ({
   useEffect(() => {
     if (student) {
       setFormData({
-        f_name: student.f_name || '',
-        l_name: student.l_name || '',
-        roll_no: student.roll_no || '',
-        dob: student.dob ? student.dob.split('T')[0] : '',
-        gender: student.gender || '',
-        blood_group: student.blood_group || '',
-        aadhar_no: student.aadhar_no || '',
-        phone_num1: student.phone_num1 || '',
-        phone_num2: student.phone_num2 || '',
-        address_line1: student.address_line1 || '',
-        address_line2: student.address_line2 || '',
-        landmark: student.landmark || '',
-        city: student.city || '',
-        state: student.state || '',
-        country: student.country || '',
-        pincode: student.pincode || '',
-        section_id: student.section_id || ''
+        f_name: student?.f_name || '',
+        l_name: student?.l_name || '',
+        roll_no: student?.roll_no || '',
+        dob: student?.dob ? student?.dob.split('T')[0] : '',
+        gender: student?.gender || '',
+        blood_group: student?.blood_group || '',
+        aadhar_no: student?.aadhar_no || '',
+        phone_num1: student?.phone_num1 || '',
+        phone_num2: student?.phone_num2 || '',
+        address_line1: student?.address_line1 || '',
+        address_line2: student?.address_line2 || '',
+        landmark: student?.landmark || '',
+        city: student?.city || '',
+        state: student?.state || '',
+        country: student?.country || '',
+        pincode: student?.pincode || '',
+        section_id: student?.section_id || ''
       });
     }
   }, [student]);
@@ -89,22 +89,22 @@ export const EditStudentForm = ({
     setLoading(true);
     try {
       const payload = {
-        f_name: formData.f_name,
-        l_name: formData.l_name,
-        dob: formData.dob ? new Date(formData.dob).toISOString() : '',
-        gender: formData.gender,
-        blood_group: formData.blood_group,
-        aadhar_no: formData.aadhar_no,
-        phone_num1: formData.phone_num1,
-        phone_num2: formData.phone_num2,
-        address_line1: formData.address_line1,
-        address_line2: formData.address_line2,
-        landmark: formData.landmark,
-        city: formData.city,
-        state: formData.state,
-        country: formData.country,
-        pincode: formData.pincode,
-        section_id: formData.section_id,
+        f_name: formData?.f_name,
+        l_name: formData?.l_name,
+        dob: formData?.dob ? new Date(formData?.dob).toISOString() : '',
+        gender: formData?.gender,
+        blood_group: formData?.blood_group,
+        aadhar_no: formData?.aadhar_no,
+        phone_num1: formData?.phone_num1,
+        phone_num2: formData?.phone_num2,
+        address_line1: formData?.address_line1,
+        address_line2: formData?.address_line2,
+        landmark: formData?.landmark,
+        city: formData?.city,
+        state: formData?.state,
+        country: formData?.country,
+        pincode: formData?.pincode,
+        section_id: formData?.section_id,
         updated_at: new Date().toISOString()
       };
 
@@ -135,10 +135,6 @@ export const EditStudentForm = ({
 
   if (!student) return null;
 
-  // Get grade from section
-  const currentSection = sections.find((s) => s.id === formData.section_id);
-  const currentGradeId = currentSection?.grade_id;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -158,8 +154,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="f_name">First Name *</Label>
                 <Input
                   id="f_name"
-                  value={formData.f_name}
-                  onChange={(e) => handleChange('f_name', e.target.value)}
+                  value={formData?.f_name}
+                  onChange={(e) => handleChange('f_name', e?.target?.value)}
                   required
                 />
               </div>
@@ -169,8 +165,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="l_name">Last Name *</Label>
                 <Input
                   id="l_name"
-                  value={formData.l_name}
-                  onChange={(e) => handleChange('l_name', e.target.value)}
+                  value={formData?.l_name}
+                  onChange={(e) => handleChange('l_name', e?.target?.value)}
                   required
                 />
               </div>
@@ -178,7 +174,7 @@ export const EditStudentForm = ({
               {/* Roll No - Read Only */}
               <div className="space-y-2">
                 <Label htmlFor="roll_no">Roll Number</Label>
-                <Input id="roll_no" value={formData.roll_no} disabled />
+                <Input id="roll_no" value={formData?.roll_no} disabled />
               </div>
 
               {/* Date of Birth */}
@@ -187,8 +183,8 @@ export const EditStudentForm = ({
                 <Input
                   id="dob"
                   type="date"
-                  value={formData.dob}
-                  onChange={(e) => handleChange('dob', e.target.value)}
+                  value={formData?.dob}
+                  onChange={(e) => handleChange('dob', e?.target?.value)}
                   required
                 />
               </div>
@@ -197,7 +193,7 @@ export const EditStudentForm = ({
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender *</Label>
                 <Select
-                  value={formData.gender}
+                  value={formData?.gender}
                   onValueChange={(value) => handleChange('gender', value)}
                 >
                   <SelectTrigger>
@@ -215,7 +211,7 @@ export const EditStudentForm = ({
               <div className="space-y-2">
                 <Label htmlFor="blood_group">Blood Group *</Label>
                 <Select
-                  value={formData.blood_group}
+                  value={formData?.blood_group}
                   onValueChange={(value) => handleChange('blood_group', value)}
                 >
                   <SelectTrigger>
@@ -239,8 +235,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="aadhar_no">Aadhar Number *</Label>
                 <Input
                   id="aadhar_no"
-                  value={formData.aadhar_no}
-                  onChange={(e) => handleChange('aadhar_no', e.target.value)}
+                  value={formData?.aadhar_no}
+                  onChange={(e) => handleChange('aadhar_no', e?.target?.value)}
                   maxLength={12}
                   required
                 />
@@ -250,7 +246,7 @@ export const EditStudentForm = ({
               <div className="space-y-2">
                 <Label htmlFor="section_id">Section *</Label>
                 <Select
-                  value={formData.section_id}
+                  value={formData?.section_id}
                   onValueChange={(value) => handleChange('section_id', value)}
                 >
                   <SelectTrigger>
@@ -259,12 +255,12 @@ export const EditStudentForm = ({
                   <SelectContent>
                     {sections.map((section: any) => {
                       const grade = grades.find((g: any) =>
-                        g.id === section.grade_id || g.grade_id === section.grade_id
+                        g?.id === section?.grade_id || g?.grade_id === section?.grade_id
                       );
                       const sectionId = section.id || section.section_id;
                       return (
                         <SelectItem key={sectionId} value={sectionId}>
-                          {grade?.grade_name || 'Unknown'} - Section {section.section_name}
+                          {grade?.grade_name || 'Unknown'} - Section {section?.section_name}
                         </SelectItem>
                       );
                     })}
@@ -285,8 +281,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="phone_num1">Primary Phone *</Label>
                 <Input
                   id="phone_num1"
-                  value={formData.phone_num1}
-                  onChange={(e) => handleChange('phone_num1', e.target.value)}
+                  value={formData?.phone_num1}
+                  onChange={(e) => handleChange('phone_num1', e?.target?.value)}
                   required
                 />
               </div>
@@ -296,8 +292,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="phone_num2">Secondary Phone</Label>
                 <Input
                   id="phone_num2"
-                  value={formData.phone_num2}
-                  onChange={(e) => handleChange('phone_num2', e.target.value)}
+                  value={formData?.phone_num2}
+                  onChange={(e) => handleChange('phone_num2', e?.target?.value)}
                 />
               </div>
             </div>
@@ -314,8 +310,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="address_line1">Address Line 1 *</Label>
                 <Input
                   id="address_line1"
-                  value={formData.address_line1}
-                  onChange={(e) => handleChange('address_line1', e.target.value)}
+                  value={formData?.address_line1}
+                  onChange={(e) => handleChange('address_line1', e?.target?.value)}
                   required
                 />
               </div>
@@ -325,8 +321,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="address_line2">Address Line 2</Label>
                 <Input
                   id="address_line2"
-                  value={formData.address_line2}
-                  onChange={(e) => handleChange('address_line2', e.target.value)}
+                  value={formData?.address_line2}
+                  onChange={(e) => handleChange('address_line2', e?.target?.value)}
                 />
               </div>
 
@@ -335,8 +331,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="landmark">Landmark</Label>
                 <Input
                   id="landmark"
-                  value={formData.landmark}
-                  onChange={(e) => handleChange('landmark', e.target.value)}
+                  value={formData?.landmark}
+                  onChange={(e) => handleChange('landmark', e?.target?.value)}
                 />
               </div>
 
@@ -345,8 +341,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="city">City *</Label>
                 <Input
                   id="city"
-                  value={formData.city}
-                  onChange={(e) => handleChange('city', e.target.value)}
+                  value={formData?.city}
+                  onChange={(e) => handleChange('city', e?.target?.value)}
                   required
                 />
               </div>
@@ -356,8 +352,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="state">State *</Label>
                 <Input
                   id="state"
-                  value={formData.state}
-                  onChange={(e) => handleChange('state', e.target.value)}
+                  value={formData?.state}
+                  onChange={(e) => handleChange('state', e?.target?.value)}
                   required
                 />
               </div>
@@ -367,8 +363,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="country">Country *</Label>
                 <Input
                   id="country"
-                  value={formData.country}
-                  onChange={(e) => handleChange('country', e.target.value)}
+                  value={formData?.country}
+                  onChange={(e) => handleChange('country', e?.target?.value)}
                   required
                 />
               </div>
@@ -378,8 +374,8 @@ export const EditStudentForm = ({
                 <Label htmlFor="pincode">Pincode *</Label>
                 <Input
                   id="pincode"
-                  value={formData.pincode}
-                  onChange={(e) => handleChange('pincode', e.target.value)}
+                  value={formData?.pincode}
+                  onChange={(e) => handleChange('pincode', e?.target?.value)}
                   required
                 />
               </div>

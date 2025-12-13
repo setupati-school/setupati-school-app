@@ -199,12 +199,12 @@ const SignUpFormInner: React.FC = () => {
     if (studentLoading) return;
     setStudentLoading(true);
     try {
-      const gradeInput = data.student.grade_name || '';
+      const gradeInput = data?.student?.grade_name || '';
       const gradeId = gradeInput.charAt(0).toLowerCase() + gradeInput.slice(1);
 
-      const sectionInput = data.student.section_name || '';
+      const sectionInput = data?.student?.section_name || '';
       const sectionId = sectionInput.charAt(0).toLowerCase() + sectionInput.slice(1);
-      const { grade_name, section_name, ...studentDataWithoutNames } = data.student;
+      const { grade_name, section_name, ...studentDataWithoutNames } = data?.student;
 
       const payload = {
         student: {
@@ -212,8 +212,8 @@ const SignUpFormInner: React.FC = () => {
           grade_id: gradeId,
           section_id: sectionId
         },
-        parent: { ...data.parent },
-        password: data.password
+        parent: { ...data?.parent },
+        password: data?.password
       };
 
       const res = await api.post('/api/v1/auth/signup/create-student', payload);
@@ -487,11 +487,11 @@ const SignUpFormInner: React.FC = () => {
                         placeholder="Enter Section (e.g., Section_A)"
                         {...studentForm.register('student.section_name')}
                       />
-                      {studentForm.formState.errors.student?.section_name && (
+                      {studentForm?.formState?.errors?.student?.section_name && (
                         <p className="text-sm text-destructive">
                           {
-                            studentForm.formState.errors.student.section_name
-                              .message
+                            studentForm?.formState?.errors?.student?.section_name
+                              ?.message
                           }
                         </p>
                       )}

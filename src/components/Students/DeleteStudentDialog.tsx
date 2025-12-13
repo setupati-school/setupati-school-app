@@ -32,12 +32,12 @@ export const DeleteStudentDialog = ({
 
   if (!student) return null;
 
-  const fullName = `${student.f_name} ${student.l_name}`.trim() || 'Unknown';
+  const fullName = `${student?.f_name} ${student?.l_name}`.trim() || 'Unknown';
 
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await api.delete(`/students/delete/${student.roll_no}`);
+      await api.delete(`/students/delete/${student?.roll_no}`);
 
       toast({
         title: 'Success',
@@ -65,7 +65,7 @@ export const DeleteStudentDialog = ({
           <AlertDialogTitle>Delete Student</AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to delete <strong>{fullName}</strong> (Roll No:{' '}
-            {student.roll_no})? This action cannot be undone and will permanently
+            {student?.roll_no})? This action cannot be undone and will permanently
             remove all student data including attendance records and exam results
             from the system.
           </AlertDialogDescription>
