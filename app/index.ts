@@ -19,6 +19,7 @@ import examResultRouter from './routes/examresultRoute.js';
 import examTimeTableRouter from './routes/examTimeTableRoute.js';
 import sectionRouter from './routes/sectionRoute.js';
 import axios from 'axios';
+import client from 'prom-client';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,4 +65,16 @@ app.listen(PORT, () => {
       logger.error('health check failed:', error);
     }
   }, 60 * 1000);
+});
+
+client.collectDefaultMetrics();
+app.get('/metrics', async (_req, res) => {
+  res.setHeader('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
+});
+
+const PORT3001 = 3001;
+app.listen(PORT3001, () => {
+  console.log(`Server running on http://localhost:${PORT3001}`);
+  console.log(`Metrics available at http://localhost:${PORT3001}/metrics`);
 });

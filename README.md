@@ -30,3 +30,12 @@
 
 ## Admin Panel (Web-based)
 - [ ] Manage content (announcements, homework, results, photos, etc.)
+
+## Monitoring Setup
+### Start Prometheus
+prometheus.exe --config.file=prometheus.yml
+
+### Access URLs
+- Grafana: http://localhost:3000
+- Prometheus: http://localhost:9090
+- Metrics: http://localhost:3001/metrics
