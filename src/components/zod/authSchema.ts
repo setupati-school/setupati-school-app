@@ -10,7 +10,8 @@ export const studentSchema = z
       l_name: z.string().min(1, 'Last name is required'),
       email: z.string().email('Invalid email'),
       roll_no: z.string().min(1, 'Roll number required'),
-      grade_name: z.string().min(1, 'Grade/Class required'),
+      grade_name: z.string().min(1, 'Grade/Class is required'),
+      section_name: z.string().min(1, 'Section is required'),
       dob: z.string().min(1, 'Date of birth is required'),
       gender: genderEnum,
       phone_num: z

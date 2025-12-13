@@ -90,6 +90,7 @@ const SignUpFormInner: React.FC = () => {
         email: '',
         roll_no: '',
         grade_name: '',
+        section_name: '',
         dob: '',
         gender: 'Male',
         phone_num: '',
@@ -198,8 +199,19 @@ const SignUpFormInner: React.FC = () => {
     if (studentLoading) return;
     setStudentLoading(true);
     try {
+      const gradeInput = data.student.grade_name || '';
+      const gradeId = gradeInput.charAt(0).toLowerCase() + gradeInput.slice(1);
+
+      const sectionInput = data.student.section_name || '';
+      const sectionId = sectionInput.charAt(0).toLowerCase() + sectionInput.slice(1);
+      const { grade_name, section_name, ...studentDataWithoutNames } = data.student;
+
       const payload = {
-        student: { ...data.student },
+        student: {
+          ...studentDataWithoutNames,
+          grade_id: gradeId,
+          section_id: sectionId
+        },
         parent: { ...data.parent },
         password: data.password
       };
@@ -456,13 +468,29 @@ const SignUpFormInner: React.FC = () => {
                     <div className="space-y-2">
                       <Label>Grade/Class *</Label>
                       <Input
-                        placeholder="Enter your Grade or class"
+                        placeholder="Enter Grade or Class (e.g., Grade_001)"
                         {...studentForm.register('student.grade_name')}
                       />
                       {studentForm.formState.errors.student?.grade_name && (
                         <p className="text-sm text-destructive">
                           {
                             studentForm.formState.errors.student.grade_name
+                              .message
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Section *</Label>
+                      <Input
+                        placeholder="Enter Section (e.g., Section_A)"
+                        {...studentForm.register('student.section_name')}
+                      />
+                      {studentForm.formState.errors.student?.section_name && (
+                        <p className="text-sm text-destructive">
+                          {
+                            studentForm.formState.errors.student.section_name
                               .message
                           }
                         </p>
