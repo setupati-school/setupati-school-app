@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge';
 import { getAuth, signOut } from 'firebase/auth';
 import { DayOfWeek } from '@/types/schoolStoreType';
 import type { SubjectMark } from '@/types/type';
-
+import type { Teacher } from '@/setupati-school/setupati-types/model';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -26,11 +26,23 @@ export const formatDate = (iso: string | undefined) => {
   }
 };
 
-export const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAYS_OF_WEEK: DayOfWeek[] = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday'
+];
 
-export const EXAM_TYPES = ['Unit Test', 'Quarterly', 'Half-Yearly', 'Annual'] as const;
+export const EXAM_TYPES = [
+  'Unit Test',
+  'Quarterly',
+  'Half-Yearly',
+  'Annual'
+] as const;
 
-export  const PERIODS = [
+export const PERIODS = [
   { period: 1, startTime: '9:00 AM', endTime: '9:45 AM' },
   { period: 2, startTime: '9:45 AM', endTime: '10:30 AM' },
   { period: 3, startTime: '10:30 AM', endTime: '11:15 AM' },
@@ -65,7 +77,6 @@ export const getAuthToken = async (): Promise<string | null> => {
 
     return token;
   } catch (error) {
-    
     console.error('Error getting auth token:', error);
     try {
       const auth = getAuth();
@@ -74,11 +85,10 @@ export const getAuthToken = async (): Promise<string | null> => {
     } catch (logoutError) {
       console.error('Error logging out user:', logoutError);
     }
-    
+
     return null;
   }
 };
-
 
 export const getTargetGroupColor = (group: string) => {
   switch (group.toLowerCase()) {
@@ -99,13 +109,51 @@ export const isExpired = (validUntil: string): boolean => {
   return new Date(validUntil) < new Date();
 };
 
+export const destructureSectionId = (sectionId: string) => {
+  const [grade, section] = sectionId.split('_');
+  console.log('grade', grade, 'section', section);
+  return { grade, section };
+};
+
+export const structureAllTeacherSectionData = (teacher: Teacher) => {
+  const structuredData = teacher.map((m) => {
+    const id = m?.id;
+    const name = `${m?.teacher?.f_name} ${m?.teacher?.l_name}`;
+    const subject =
+      Array.isArray(m?.teacher?.subject_id) && m?.teacher?.subject_id.length > 0
+        ? m?.teacher?.subject_id.join(', ')
+        : 'Not Assigned';
+    const classes =
+      Array.isArray(m?.teacher?.section_id) && m?.teacher?.section_id.length > 0
+        ? m?.teacher?.section_id
+        : ['N/A'];
+    const department = m?.teacher?.department || 'General';
+    const phone = m?.teacher?.phone_num;
+    const email = m?.teacher?.email;
+    const designation = m?.teacher?.designation || 'Teacher';
+
+    return {
+      id: id,
+      name: name,
+      subject: subject,
+      classes: classes,
+      department: department,
+      phone: phone,
+      email: email,
+      designation: designation
+    };
+  });
+
+  return structuredData;
+};
+
 export const formatTime = (time: string) => {
-    if (!time) return '';
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+  if (!time) return '';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
 };
 
 export const getGreeting = (): string => {
@@ -127,7 +175,10 @@ export const getInitials = (name?: string | null): string => {
   );
 };
 
-export const getFirstName = (name?: string | null, fallback = 'Student'): string => {
+export const getFirstName = (
+  name?: string | null,
+  fallback = 'Student'
+): string => {
   return name?.split(' ')?.[0] ?? fallback;
 };
 
@@ -169,7 +220,13 @@ export const calculateExamTotals = (
 
 export const calculateAttendanceStats = (
   records?: { status?: string }[]
-): { total: number; present: number; absent: number; late: number; rate: number } => {
+): {
+  total: number;
+  present: number;
+  absent: number;
+  late: number;
+  rate: number;
+} => {
   const total = records?.length ?? 0;
   const present = records?.filter((r) => r?.status === 'present')?.length ?? 0;
   const absent = records?.filter((r) => r?.status === 'absent')?.length ?? 0;
@@ -178,21 +235,19 @@ export const calculateAttendanceStats = (
   return { total, present, absent, late, rate };
 };
 
-export const attendanceRate =(studentCount: number, presentToday: number): number=> {
-return   studentCount > 0 ? Math.round((presentToday / studentCount) * 100) : 0;
+export const attendanceRate = (
+  studentCount: number,
+  presentToday: number
+): number => {
+  return studentCount > 0 ? Math.round((presentToday / studentCount) * 100) : 0;
 };
 
 export const getSection = (sectionId: string, sections: any[]) => {
-    return sections.find((s) => s?.id === sectionId);
+  return sections.find((s) => s?.id === sectionId);
 };
 
 export const getGrade = (sectionId: string, grades: any[], sections: any[]) => {
-  const section = getSection(sectionId,sections);
+  const section = getSection(sectionId, sections);
   if (!section) return null;
   return grades.find((g) => g?.id === section.grade_id);
 };
-
-
-
-  
-

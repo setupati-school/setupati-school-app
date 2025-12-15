@@ -10,7 +10,7 @@ import { StudentQuickActions } from './StudentQuickActions';
 import { ExamResultsSummary } from './ExamResultsSummary';
 import { AttendanceSummary } from './AttendanceSummary';
 import { CardHeaderWithIcon, EmptyState } from './shared';
-import { getGreeting, getFirstName } from '../../lib/utils';
+import { getGreeting, getFirstName } from '@/lib/utils';
 
 export const StudentDashboard = () => {
   const navigate = useNavigate();

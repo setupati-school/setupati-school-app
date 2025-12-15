@@ -17,9 +17,8 @@ import { useNavigate } from 'react-router-dom';
 import { AdminQuickActions } from './AdminQuickActions';
 import { StudentManagement } from './StudentManagement';
 import { AdminStudentView } from './AdminStudentView';
-import type { Student } from '@/types/schoolStoreType';
-import { getGreeting } from '../../Students/utils';
-import { attendanceRate } from '../../../lib/utils'
+import type { Student } from '@/types';
+import { getGreeting, attendanceRate } from '@/lib/utils';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { Gallery, Forbidden, LandingPage, NotFound } from '@/pages';
-import { DashboardRoute } from '@/components/Dashboard';
+import { DashboardRoute,TeacherRoute } from '@/components/Role';
 import { CircularsPage } from '@/components/Circulars';
 import { SubjectsPage } from '@/components/Subject';
 import { TimetablePage } from '@/components/Timetable';
@@ -34,12 +34,12 @@ const SignUpForm = React.lazy(() =>
   import('@/components/admin').then((m) => ({ default: m.SignUpForm }))
 );
 
-const StudentResultLookup = React.lazy(() =>
-  import('@/components/Students/StudentResultLookup')
+const StudentResultLookup = React.lazy(
+  () => import('@/components/Students/StudentResultLookup')
 );
 
-const ExamResultsPage = React.lazy(() =>
-  import('@/components/ExamResults/ExamResultsPage')
+const ExamResultsPage = React.lazy(
+  () => import('@/components/ExamResults/ExamResultsPage')
 );
 
 const ResultsRoute: React.FC = () => {
@@ -100,18 +100,11 @@ export const router = createBrowserRouter([
 
       {
         path: '/students',
-        element: (
-          <StudentDashboard />
-        )
+        element: <StudentDashboard />
       },
       {
         path: '/teachers',
-        element: (
-          <ComingSoon
-            title="Teacher Section"
-            subtitle="Teacher module coming soon..."
-          />
-        )
+        element: <TeacherRoute />
       },
       {
         path: '/create',

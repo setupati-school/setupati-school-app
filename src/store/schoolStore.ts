@@ -5,6 +5,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import api from '@/lib/axiosConfig';
 import { toast } from '@/hooks/use-toast';
+import { Axios, AxiosError } from 'axios';
+import { unknown } from 'zod';
 
 /**
  * School store: keep only grouped exam results (server-side grouped)
@@ -131,6 +133,23 @@ export const useSchoolStore = create<SchoolStore>()(
           }
         },
 
+        getAllTeachers: async () => {
+          try {
+            const response = await api.get('/teachers/all');
+            const teachersData = response.data;
+            set({ teachers: teachersData });
+            return teachersData;
+          } catch (err: AxiosError | unknown) {
+            toast.error({
+              title: 'Error',
+              description:
+                (err.response?.data?.message as string) ||
+                'Failed to fetch teachers data',
+              variant: 'destructive'
+            });
+          }
+        },
+
         resetStore: () =>
           set({
             currentUser: null,
@@ -177,7 +196,9 @@ export const useSchoolStore = create<SchoolStore>()(
           return (
             state.students.find(
               (s) => s.id === currentUser.id || s.id === currentUser.email
-            ) ?? state.students[0] ?? null
+            ) ??
+            state.students[0] ??
+            null
           );
         },
 
@@ -275,10 +296,34 @@ export const initializeSampleData = () => {
   ]);
 
   store.setSubjects([
-    { id: 'SUBJ-MATH', subject_name: 'Mathematics', grade_id: 'grade_1', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
-    { id: 'SUBJ-ENG', subject_name: 'English', grade_id: 'grade_1', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
-    { id: 'SUBJ-SCI', subject_name: 'Science', grade_id: 'grade_2', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
-    { id: 'SUBJ-HIST', subject_name: 'History', grade_id: 'grade_2', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' }
+    {
+      id: 'SUBJ-MATH',
+      subject_name: 'Mathematics',
+      grade_id: 'grade_1',
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'SUBJ-ENG',
+      subject_name: 'English',
+      grade_id: 'grade_1',
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'SUBJ-SCI',
+      subject_name: 'Science',
+      grade_id: 'grade_2',
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'SUBJ-HIST',
+      subject_name: 'History',
+      grade_id: 'grade_2',
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z'
+    }
   ]);
 
   // grouped exam results (backend-shaped)

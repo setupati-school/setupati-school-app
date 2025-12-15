@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import { BACKEND_URL } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -24,7 +24,7 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.code === 'ERR_NETWORK') {
       toast({
         title: 'Error',
@@ -37,6 +37,18 @@ api.interceptors.response.use(
         description: 'Session expired. Please log in again.',
         variant: 'destructive'
       });
+
+      const auth = getAuth();
+      try {
+        await signOut(auth);
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description:
+            'Failed to logOut the User due Session expiration. Please log in again Or check your network connection Or do a refresh of the page.',
+          variant: 'destructive'
+        });
+      }
     } else {
       toast({
         title: 'Error',

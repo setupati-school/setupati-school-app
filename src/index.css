@@ -1,10 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @config "../tailwind.config.ts";
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
-
 
 body {
   top: 0 !important;
@@ -14,7 +13,6 @@ body {
 body .skiptranslate {
   display: none;
 }
-
 
 @layer base {
   :root {
@@ -63,9 +61,17 @@ body .skiptranslate {
     --warning-soft: 38 40% 95%;
 
     /* Educational gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(213 84% 35%));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-strong)), hsl(25 85% 65%));
-    
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(213 84% 35%)
+    );
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(var(--accent-strong)),
+      hsl(25 85% 65%)
+    );
+
     /* Shadows */
     --shadow-soft: 0 2px 10px -5px hsl(213 84% 28% / 0.1);
     --shadow-elevation: 0 8px 30px -10px hsl(213 84% 28% / 0.15);
@@ -129,8 +135,16 @@ body .skiptranslate {
     --warning-foreground: 0 0% 98%;
     --warning-soft: 38 25% 15%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(213 84% 70%));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-strong)), hsl(25 75% 55%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(213 84% 70%)
+    );
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(var(--accent-strong)),
+      hsl(25 75% 55%)
+    );
 
     --shadow-soft: 0 2px 10px -5px hsl(0 0% 0% / 0.2);
     --shadow-elevation: 0 8px 30px -10px hsl(0 0% 0% / 0.3);
@@ -143,10 +157,9 @@ body .skiptranslate {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-    html {
+  html {
     --test-primary: hsl(var(--primary));
   }
-
 }
 
 @layer base {
@@ -158,4 +171,24 @@ body .skiptranslate {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Apply hidden scrollbar globally to scroll areas */
+[data-radix-scroll-area-viewport] {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+[data-radix-scroll-area-viewport]::-webkit-scrollbar {
+  display: none;
 }

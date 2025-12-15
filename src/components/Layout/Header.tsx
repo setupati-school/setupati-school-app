@@ -18,6 +18,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { LanguageSwitcher } from '@/components/Layout/LanguageSwitcher';
+import { getGreeting } from '@/lib/utils';
 
 const HeaderComponent: React.FC = () => {
   const { currentUser, resetStore } = useSchoolStore();
@@ -62,7 +63,7 @@ const HeaderComponent: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground">
-            Welcome back, {currentUser?.name}
+            {getGreeting()}, {currentUser?.name}
           </h2>
           <p className="text-sm text-muted-foreground">
             Here's what's happening at your school today
