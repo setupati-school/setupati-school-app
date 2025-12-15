@@ -10,5 +10,12 @@ export { StudentAttendance } from './StudentAttendance';
 export { StatsCard } from './StatsCard';
 export { StudentResultLookup } from './StudentResultLookup';
 
+// Admin components
+export { StudentsPage } from './StudentsPage';
+export { StudentsList } from './StudentsList';
+export { ViewStudentDialog } from './ViewStudentDialog';
+export { EditStudentForm } from './EditStudentForm';
+export { DeleteStudentDialog } from './DeleteStudentDialog';
+
 // Shared components
 export * from './shared';

@@ -20,8 +20,8 @@ import {
 } from '@/components/Authentication';
 import { useAuthStore, useSchoolStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { StudentDashboard } from './components/Students';
 import { TeachersPage } from './components/Teachers/TeachersPage';
+import { StudentsPage } from './components/Students/StudentsPage';
 
 // ---------- Lazy-loaded layout & dashboards ----------
 const Main = React.lazy(() =>
@@ -101,9 +101,7 @@ export const router = createBrowserRouter([
 
       {
         path: '/students',
-        element: (
-          <StudentDashboard />
-        )
+        element: <StudentsPage />
       },
       {
         path: '/teachers',

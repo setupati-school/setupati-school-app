@@ -182,15 +182,21 @@ export const attendanceRate =(studentCount: number, presentToday: number): numbe
 return   studentCount > 0 ? Math.round((presentToday / studentCount) * 100) : 0;
 };
 
-export const getSection = (sectionId: string, sections: any[]) => {
-    return sections.find((s) => s?.id === sectionId);
+export const getSection = (sectionId: string, sections?: any[]) => {
+    return sections?.find((s) => s?.id === sectionId);
 };
 
-export const getGrade = (sectionId: string, grades: any[], sections: any[]) => {
+export const getGrade = (sectionId: string, grades?: any[], sections?: any[]) => {
   const section = getSection(sectionId,sections);
   if (!section) return null;
-  return grades.find((g) => g?.id === section.grade_id);
+  return grades?.find((g) => g?.id === section.grade_id);
 };
+
+export const getInitial = (firstName: string, lastName: string) => {
+    const first = firstName?.[0] ?? '';
+    const last = lastName?.[0] ?? '';
+    return `${first}${last}`.toUpperCase() || 'S';
+  };
 
 
 
