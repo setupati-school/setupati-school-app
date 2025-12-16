@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSchoolStore } from '@/store/schoolStore';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AttendanceSummary() {
   const attendances = useSchoolStore((s) => s.attendance ?? []);
@@ -13,9 +14,21 @@ export default function AttendanceSummary() {
 
   const latestSummary = useMemo(() => {
     if (!attendances.length) return null;
+    const { user, hasRole } = useAuthStore.getState();
+    let relevant = attendances;
+    if (user && hasRole(['student'])) {
+      const myStudent = useSchoolStore.getState().getMyStudent?.();
+      const sid = myStudent?.id ?? user.uid;
+      relevant = attendances.filter((r: any) => r.student_id === sid);
+    } else if (user && hasRole(['teacher'])) {
+      // teacher: show attendance only for their sections
+      const teacher = useSchoolStore.getState().teachers.find((t: any) => t.id === user.id || t.email === user.email);
+      const secIds = (teacher?.section_ids && teacher.section_ids.length) ? teacher.section_ids : (useSchoolStore.getState().sections.filter((s: any) => s.class_teacher_id === teacher?.id).map((s: any) => s.id));
+      relevant = attendances.filter((r: any) => secIds.includes(r.section_id ?? r.sectionId));
+    }
 
     const groups: Record<string, { date: string; sectionId: string; records: any[] }> = {};
-    for (const rec of attendances) {
+    for (const rec of relevant) {
       const key = rec.attendanceId ?? `${rec.section_id}_${rec.date}`;
       if (!groups[key]) groups[key] = { date: rec.date, sectionId: rec.section_id, records: [] };
       groups[key].records.push(rec);

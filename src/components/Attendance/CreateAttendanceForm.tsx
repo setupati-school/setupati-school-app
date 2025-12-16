@@ -10,6 +10,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/axiosConfig';
 import { Loader2 } from 'lucide-react';
 
@@ -33,8 +34,17 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
 
   const sectionStudents = useMemo(() => {
     if (!sectionId) return [];
-    return students.filter((st: any) => st.section_id === sectionId);
+    return students.filter((st: any) => st.section_id === sectionId || st.id === sectionId);
   }, [students, sectionId]);
+
+  // displayedStudents: prefer store's sectionStudents; if empty (store not populated), derive from loadGroup.records
+  const displayedStudents = useMemo(() => {
+    if (sectionStudents && sectionStudents.length) return sectionStudents;
+    if (loadGroup && Array.isArray(loadGroup.records) && loadGroup.records.length) {
+      return loadGroup.records.map((r: any) => ({ id: r.student_id, f_name: r.student_name ?? r.name ?? r.student_id, roll_no: r.roll_no ?? '-' }));
+    }
+    return [];
+  }, [sectionStudents, loadGroup]);
 
   const handleSectionChange = (v: string) => {
     setSectionId(v);
@@ -47,9 +57,9 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
 
   const initialMap = useMemo(() => {
     const map = new Map<string, 'present' | 'absent' | 'late'>();
-    sectionStudents.forEach((s: any) => map.set(s.id, 'present'));
+    displayedStudents.forEach((s: any) => map.set(s.id, 'present'));
     return map;
-  }, [sectionStudents]);
+  }, [displayedStudents]);
 
   const [statuses, setStatuses] = useState<Map<string, 'present' | 'absent' | 'late'>>(initialMap);
   const [loading, setLoading] = useState(false);
@@ -57,28 +67,31 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
   // When section changes, reset statuses to default for that section
   React.useEffect(() => {
     const map = new Map<string, 'present' | 'absent' | 'late'>();
-    sectionStudents.forEach((s: any) => map.set(s.id, 'present'));
+    displayedStudents.forEach((s: any) => map.set(s.id, 'present'));
     setStatuses(map);
-  }, [sectionId, sectionStudents]);
+  }, [sectionId, displayedStudents]);
+
+  const { hasRole } = useAuthStore();
+  const canEdit = hasRole(['admin', 'teacher']);
 
   // When a loadGroup is provided (edit), populate form values
   React.useEffect(() => {
     if (!loadGroup) return;
     const sg = loadGroup as any;
-    if (sg.section_id) setSectionId(sg.section_id);
+    if (sg.section_id || sg.sectionId) setSectionId(sg.section_id ?? sg.sectionId);
     if (sg.date) setDate(sg.date);
 
-    // build statuses map from records; re-run when sectionStudents available
+    // build statuses map from records; re-run when displayedStudents available
     const map = new Map<string, 'present' | 'absent' | 'late'>();
     if (Array.isArray(sg.records)) {
       sg.records.forEach((r: any) => map.set(r.student_id, r.status ?? 'present'));
     }
     // ensure all students in section have entries (default present)
-    sectionStudents.forEach((s: any) => {
+    displayedStudents.forEach((s: any) => {
       if (!map.has(s.id)) map.set(s.id, 'present');
     });
     setStatuses(map);
-  }, [loadGroup, sectionStudents]);
+  }, [loadGroup, displayedStudents]);
 
   const setStatus = (studentId: string, status: 'present' | 'absent' | 'late') => {
     setStatuses((prev) => new Map(prev).set(studentId, status));
@@ -158,7 +171,7 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
     }
   };
 
-  const hasStudents = sectionStudents && sectionStudents.length > 0;
+  const hasStudents = displayedStudents && displayedStudents.length > 0;
 
   return (
     <form onSubmit={submit} className="space-y-3 p-4 bg-white rounded-md shadow-sm">
@@ -169,18 +182,23 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
         </div>
         <div>
           <label className="block text-sm text-gray-600">Section</label>
-          <Select value={sectionId} onValueChange={(v) => handleSectionChange(v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select section" />
-            </SelectTrigger>
-            <SelectContent>
-              {sections.map((sec: any) => (
-                <SelectItem key={sec.section_id ?? sec.id} value={sec.section_id ?? sec.id}>
-                  {sec.section_name ?? sec.name ?? sec.id}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {loadGroup ? (
+            // when editing, show static section name (no dropdown)
+            <div className="p-2 rounded bg-gray-50">{sections.find((s: any) => (s.section_id ?? s.id) === sectionId)?.section_name ?? sections.find((s: any) => (s.section_id ?? s.id) === sectionId)?.name ?? sectionId}</div>
+          ) : (
+            <Select value={sectionId} onValueChange={(v) => handleSectionChange(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select section" />
+              </SelectTrigger>
+              <SelectContent>
+                {sections.map((sec: any) => (
+                  <SelectItem key={sec.section_id ?? sec.id} value={sec.section_id ?? sec.id}>
+                    {sec.section_name ?? sec.name ?? sec.id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="flex items-end space-x-2">
           <Button type="button" onClick={() => markAll('present')} className="bg-green-500">All Present</Button>
@@ -194,7 +212,7 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
           {!hasStudents && (
             <div className="text-sm text-gray-500">No students in this section.</div>
           )}
-          {sectionStudents.map((stu: any) => (
+          {displayedStudents.map((stu: any) => (
             <div key={stu.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
               <div>
                 <div className="font-medium">{stu.f_name ?? stu.first_name} {stu.l_name ?? stu.last_name}</div>
@@ -218,10 +236,14 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={!sectionId || !hasStudents || loading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Attendance
-        </Button>
+        {canEdit ? (
+          <Button type="submit" disabled={!sectionId || !hasStudents || loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Attendance
+          </Button>
+        ) : (
+          <div className="text-sm text-gray-500">You do not have permission to modify attendance.</div>
+        )}
       </div>
     </form>
   );
