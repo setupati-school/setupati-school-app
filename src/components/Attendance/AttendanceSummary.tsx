@@ -17,6 +17,7 @@ type LatestAttendanceSummary = {
 export default function AttendanceSummary() {
   const attendances = useSchoolStore((s) => s.attendance as Attendance[]);
   const sections = useSchoolStore((s) => s.sections as Section[]);
+  const store = useSchoolStore.getState();
 
   const sectionById = useMemo(() => {
     const m: Record<string, Section> = {};
@@ -33,11 +34,10 @@ export default function AttendanceSummary() {
     let relevant: Attendance[] & { attendanceId?: string }[] = attendances as any;
 
     if (user && hasRole(['student'])) {
-      const myStudent = useSchoolStore.getState().getMyStudent?.();
+      const myStudent = store.getMyStudent?.();
       const sid = myStudent?.id ?? (user as any).uid;
       relevant = relevant.filter((r) => r.student_id === sid);
     } else if (user && hasRole(['teacher'])) {
-      const store = useSchoolStore.getState();
       const teacher = store.teachers.find(
         (t) => t.id === (user as any).id || t.email === (user as any).email
       );

@@ -166,6 +166,7 @@ const groupAttendanceByGrade = (
 
 export default function AttendanceList({ onEdit, onDelete, onMountFetch }: AttendanceListProps) {
   const attendances = useSchoolStore((s) => (s.attendance ?? []) as AttendanceWithMeta[]);
+  const store = useSchoolStore.getState();
   const { user, hasRole } = useAuthStore();
   const canEdit = hasRole(['admin', 'teacher']);
   const currentUser = user;
@@ -185,7 +186,6 @@ export default function AttendanceList({ onEdit, onDelete, onMountFetch }: Atten
   // Teacher section visibility
   const teacherSectionIds: string[] = useMemo(() => {
     if (!currentUser) return [];
-    const store = useSchoolStore.getState();
     const teacherRecord = store.teachers.find(
       (t) => t.id === (currentUser as any).id || t.email === (currentUser as any).email
     );
