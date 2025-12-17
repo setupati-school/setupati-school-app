@@ -13,61 +13,76 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/axiosConfig';
 import { Loader2 } from 'lucide-react';
+import type { Attendance, Section, Student } from '@/types';
+
+type AttendanceStatus = Attendance['status'];
+
+type AttendanceGroup = {
+  attendanceId: string;
+  section_id: string;
+  sectionId: string;
+  date: string;
+  records: (Attendance & { attendanceId?: string })[];
+};
+
+type CreateAttendanceFormProps = {
+  loadGroup?: AttendanceGroup | null;
+  onSaved?: () => void;
+};
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup?: any | null; onSaved?: () => void }) {
-  const sections = useSchoolStore((s) => s.sections ?? []);
-  const students = useSchoolStore((s) => s.students ?? []);
+export default function CreateAttendanceForm({ loadGroup, onSaved }: CreateAttendanceFormProps) {
+  const sections = useSchoolStore((s) => s.sections as Section[]);
+  const students = useSchoolStore((s) => s.students as Student[]);
   const addAttendance = useSchoolStore((s) => s.addAttendance);
   const updateAttendance = useSchoolStore((s) => s.updateAttendance);
   const { toast } = useToast();
 
-  const [date, setDate] = useState(todayISO());
-  const [sectionId, setSectionId] = useState<string>(sections[0]?.section_id ?? sections[0]?.id ?? '');
+  const [date, setDate] = useState<string>(loadGroup?.date ?? todayISO());
+  const [sectionId, setSectionId] = useState<string>(
+    loadGroup?.section_id ?? loadGroup?.sectionId ?? sections[0]?.id ?? ''
+  );
+
   // ensure default section is set when sections load
   React.useEffect(() => {
     if (!sectionId && sections.length > 0) {
-      setSectionId(sections[0].section_id ?? sections[0].id);
+      setSectionId(sections[0].id);
     }
   }, [sections, sectionId]);
 
   const sectionStudents = useMemo(() => {
-    if (!sectionId) return [];
-    return students.filter((st: any) => st.section_id === sectionId || st.id === sectionId);
+    if (!sectionId) return [] as Student[];
+    return students.filter((st) => st.section_id === sectionId);
   }, [students, sectionId]);
 
   // displayedStudents: prefer store's sectionStudents; if empty (store not populated), derive from loadGroup.records
   const displayedStudents = useMemo(() => {
     if (sectionStudents && sectionStudents.length) return sectionStudents;
     if (loadGroup && Array.isArray(loadGroup.records) && loadGroup.records.length) {
-      return loadGroup.records.map((r: any) => ({ id: r.student_id, f_name: r.student_name ?? r.name ?? r.student_id, roll_no: r.roll_no ?? '-' }));
+      return loadGroup.records.map((r) => ({
+        id: r.student_id,
+        f_name: (r as any).student_name ?? (r as any).name ?? r.student_id,
+        roll_no: (r as any).roll_no ?? '-',
+        section_id: loadGroup.section_id
+      })) as unknown as Student[];
     }
-    return [];
+    return [] as Student[];
   }, [sectionStudents, loadGroup]);
 
-  const handleSectionChange = (v: string) => {
-    setSectionId(v);
-    // immediately reset statuses for the newly selected section
-    const filtered = students.filter((st: any) => st.section_id === v);
-    const map = new Map<string, 'present' | 'absent' | 'late'>();
-    filtered.forEach((s: any) => map.set(s.id, 'present'));
-    setStatuses(map);
-  };
-
-  const initialMap = useMemo(() => {
-    const map = new Map<string, 'present' | 'absent' | 'late'>();
-    displayedStudents.forEach((s: any) => map.set(s.id, 'present'));
-    return map;
-  }, [displayedStudents]);
-
-  const [statuses, setStatuses] = useState<Map<string, 'present' | 'absent' | 'late'>>(initialMap);
+  const [statuses, setStatuses] = useState<Map<string, AttendanceStatus>>(
+    () => {
+      const map = new Map<string, AttendanceStatus>();
+      displayedStudents.forEach((s) => map.set(s.id, 'present'));
+      return map;
+    }
+  );
   const [loading, setLoading] = useState(false);
 
-  // When section changes, reset statuses to default for that section
+  // When section or students change, reset statuses to default for that section
   React.useEffect(() => {
-    const map = new Map<string, 'present' | 'absent' | 'late'>();
-    displayedStudents.forEach((s: any) => map.set(s.id, 'present'));
+    const map = new Map<string, AttendanceStatus>();
+    displayedStudents.forEach((s) => map.set(s.id, 'present'));
     setStatuses(map);
   }, [sectionId, displayedStudents]);
 
@@ -77,30 +92,34 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
   // When a loadGroup is provided (edit), populate form values
   React.useEffect(() => {
     if (!loadGroup) return;
-    const sg = loadGroup as any;
-    if (sg.section_id || sg.sectionId) setSectionId(sg.section_id ?? sg.sectionId);
-    if (sg.date) setDate(sg.date);
 
-    // build statuses map from records; re-run when displayedStudents available
-    const map = new Map<string, 'present' | 'absent' | 'late'>();
-    if (Array.isArray(sg.records)) {
-      sg.records.forEach((r: any) => map.set(r.student_id, r.status ?? 'present'));
+    if (loadGroup.section_id || loadGroup.sectionId) {
+      setSectionId(loadGroup.section_id ?? loadGroup.sectionId);
     }
+    if (loadGroup.date) {
+      setDate(loadGroup.date);
+    }
+
+    const map = new Map<string, AttendanceStatus>();
+    if (Array.isArray(loadGroup.records)) {
+      loadGroup.records.forEach((r) => map.set(r.student_id, r.status ?? 'present'));
+    }
+
     // ensure all students in section have entries (default present)
-    displayedStudents.forEach((s: any) => {
+    displayedStudents.forEach((s) => {
       if (!map.has(s.id)) map.set(s.id, 'present');
     });
     setStatuses(map);
   }, [loadGroup, displayedStudents]);
 
-  const setStatus = (studentId: string, status: 'present' | 'absent' | 'late') => {
+  const setStatus = (studentId: string, status: AttendanceStatus) => {
     setStatuses((prev) => new Map(prev).set(studentId, status));
   };
 
-  const markAll = (status: 'present' | 'absent' | 'late') => {
+  const markAll = (status: AttendanceStatus) => {
     setStatuses((prev) => {
       const map = new Map(prev);
-      sectionStudents.forEach((s: any) => map.set(s.id, status));
+      sectionStudents.forEach((s) => map.set(s.id, status));
       return map;
     });
   };
@@ -108,34 +127,62 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    setLoading(true);
+
     if (!sectionId) {
-      toast({ title: 'Error', description: 'Please select a section', variant: 'destructive' } as any);
-      setLoading(false);
+      toast({
+        title: 'Error',
+        description: 'Please select a section',
+        variant: 'destructive'
+      } as any);
       return;
     }
+
+    setLoading(true);
 
     const attendanceGroupId = `${sectionId}_${date}`;
 
     try {
-      const existing = useSchoolStore.getState().attendance.filter((a: any) => a.attendanceId === attendanceGroupId);
+      const stateAttendance = (useSchoolStore.getState().attendance ?? []) as (Attendance & {
+        attendance_id?: string;
+        attendanceId?: string;
+      })[];
 
-      for (const student of sectionStudents) {
+      // consider any record for this section + date as "existing" for that group
+      const existing = stateAttendance.filter(
+        (a) => a.section_id === sectionId && a.date === date
+      );
+
+      // use displayedStudents so edit dialog works even if students store is not fully populated
+      for (const student of displayedStudents) {
         const status = statuses.get(student.id) ?? 'present';
         const now = new Date().toISOString();
 
-        const found = existing?.find((e: any) => e.student_id === student.id);
+        const found = existing?.find(
+          (e) => e.student_id === student.id || (e as any).studentId === student.id
+        );
         if (found) {
           // only update if status has changed
           if (found.status !== status) {
             try {
-              await api.put(`/attendance/update/${found.id}`, { status, updated_at: now });
+              const updateId =
+                (found as any).attendance_id ?? found.attendanceId ?? found.id;
+              await api.put(`/attendance/update/${updateId}`, {
+                status,
+                updated_at: now
+              });
               updateAttendance?.(found.id, { status, updated_at: now });
             } catch (err) {
+              // eslint-disable-next-line no-console
               console.error('Failed to update attendance', err);
-              toast({ title: 'Error', description: `Failed to update ${student.id}`, variant: 'destructive' } as any);
+              toast({
+                title: 'Error',
+                description: `Failed to update ${student.id}`,
+                variant: 'destructive'
+              } as any);
             }
           }
+          // skip creation if existing
+          // eslint-disable-next-line no-continue
           continue;
         }
 
@@ -144,28 +191,42 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
         try {
           const res = await api.post('/attendance/create', payload);
           const created = res?.data ?? null;
-          const record = {
-            id: created?.attendance_id ?? created?.id ?? `att_${Date.now()}_${student.id}`,
-            attendanceId: attendanceGroupId,
+          const record: Attendance & { attendanceId?: string } = {
+            id: (created as any)?.attendance_id ?? (created as any)?.id ?? `att_${Date.now()}_${student.id}`,
             student_id: student.id,
             section_id: sectionId,
             date,
             status,
             created_at: now,
-            updated_at: now
+            updated_at: now,
+            attendanceId: attendanceGroupId
           };
           addAttendance?.(record as any);
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.error('Failed to add attendance', err);
-          toast({ title: 'Error', description: `Failed to add ${student.id}`, variant: 'destructive' } as any);
+          toast({
+            title: 'Error',
+            description: `Failed to add ${student.id}`,
+            variant: 'destructive'
+          } as any);
         }
       }
 
-      toast({ title: 'Saved', description: 'Attendance recorded', variant: 'success' } as any);
+      toast({
+        title: 'Saved',
+        description: 'Attendance recorded',
+        variant: 'success'
+      } as any);
       if (onSaved) onSaved();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Attendance save failed', error);
-      toast({ title: 'Error', description: 'Failed to save attendance', variant: 'destructive' } as any);
+      toast({
+        title: 'Error',
+        description: 'Failed to save attendance',
+        variant: 'destructive'
+      } as any);
     } finally {
       setLoading(false);
     }
@@ -183,17 +244,18 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
         <div>
           <label className="block text-sm text-gray-600">Section</label>
           {loadGroup ? (
-            // when editing, show static section name (no dropdown)
-            <div className="p-2 rounded bg-gray-50">{sections.find((s: any) => (s.section_id ?? s.id) === sectionId)?.section_name ?? sections.find((s: any) => (s.section_id ?? s.id) === sectionId)?.name ?? sectionId}</div>
+            <div className="p-2 rounded bg-gray-50">
+              {sections.find((s) => s.id === sectionId)?.section_name ?? sectionId}
+            </div>
           ) : (
-            <Select value={sectionId} onValueChange={(v) => handleSectionChange(v)}>
+            <Select value={sectionId} onValueChange={(v) => setSectionId(v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select section" />
               </SelectTrigger>
               <SelectContent>
-                {sections.map((sec: any) => (
-                  <SelectItem key={sec.section_id ?? sec.id} value={sec.section_id ?? sec.id}>
-                    {sec.section_name ?? sec.name ?? sec.id}
+                {sections.map((sec: Section) => (
+                  <SelectItem key={sec.id} value={sec.id}>
+                    {sec.section_name ?? sec.id}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -201,25 +263,40 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
           )}
         </div>
         <div className="flex items-end space-x-2">
-          <Button type="button" onClick={() => markAll('present')} className="bg-green-500">All Present</Button>
-          <Button type="button" onClick={() => markAll('absent')} className="bg-red-500">All Absent</Button>
+          <Button type="button" onClick={() => markAll('present')} className="bg-green-500">
+            All Present
+          </Button>
+          <Button type="button" onClick={() => markAll('absent')} className="bg-red-500">
+            All Absent
+          </Button>
         </div>
       </div>
 
-        <div className="mt-3">
+      <div className="mt-3">
         <div className="text-sm text-gray-600 mb-2">Students</div>
         <div className="space-y-2 max-h-64 overflow-auto">
           {!hasStudents && (
             <div className="text-sm text-gray-500">No students in this section.</div>
           )}
-          {displayedStudents.map((stu: any) => (
-            <div key={stu.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+          {displayedStudents.map((stu) => (
+            <div
+              key={stu.id}
+              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+            >
               <div>
-                <div className="font-medium">{stu.f_name ?? stu.first_name} {stu.l_name ?? stu.last_name}</div>
-                <div className="text-xs text-gray-500">Roll: {stu.roll_no ?? '-'}</div>
+                <div className="font-medium">
+                  {(stu as any).f_name ?? (stu as any).first_name}{' '}
+                  {(stu as any).l_name ?? (stu as any).last_name}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Roll: {(stu as any).roll_no ?? '-'}
+                </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Select value={statuses.get(stu.id) ?? 'present'} onValueChange={(v) => setStatus(stu.id, v as any)}>
+                <Select
+                  value={statuses.get(stu.id) ?? 'present'}
+                  onValueChange={(v) => setStatus(stu.id, v as AttendanceStatus)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -242,7 +319,9 @@ export default function CreateAttendanceForm({ loadGroup, onSaved }: { loadGroup
             Save Attendance
           </Button>
         ) : (
-          <div className="text-sm text-gray-500">You do not have permission to modify attendance.</div>
+          <div className="text-sm text-gray-500">
+            You do not have permission to modify attendance.
+          </div>
         )}
       </div>
     </form>
