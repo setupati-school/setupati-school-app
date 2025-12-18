@@ -14,16 +14,24 @@ if (!db)
 const attendanceCollection = db.collection('attendance');
 
 export const addAttendance = async (data: Attendance): Promise<string> => {
-  const docRef = await attendanceCollection.add(data);
-  logger.info(`Attendance added with ID: ${docRef.id}`);
-  return docRef.id;
+  const docRef = attendanceCollection.doc();
+  const generatedId = docRef.id;
+
+  const payload = {
+    ...data,
+    attendance_id: generatedId,
+    } as Attendance & { attendance_id: string};
+
+  await docRef.set(payload);
+  logger.info(`Attendance added with ID: ${generatedId}`);
+  return generatedId;
 };
 
 export const getAttendance = async (
   attendanceId: string
 ): Promise<{ id: string; attendance: Attendance | null }[]> => {
   const attendanceDoc = await attendanceCollection
-    .where('attendanceId', '==', attendanceId)
+    .where('attendance_id', '==', attendanceId)
     .get();
   if (attendanceDoc.empty) {
     logger.info(`No attendance found for student ID: ${attendanceId}`);

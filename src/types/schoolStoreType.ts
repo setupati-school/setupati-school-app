@@ -189,6 +189,7 @@ export interface SchoolStore {
   homework: Homework[];
   timetables: Timetable[];
   examTimetables: ExamTimetable[];
+  exams: any[];
 
   // UI State
   activeView: string;
@@ -212,6 +213,13 @@ export interface SchoolStore {
   setHomework: (homework: Homework[]) => void;
   setTimetables: (timetables: Timetable[]) => void;
   setExamTimetables: (examTimetables: ExamTimetable[]) => void;
+  setExams: (exams: any[]) => void;
+  fetchExamsFromBackend: (studentId?: string) => Promise<any[]>;
+  getMyResults: () => any[];
+  getSubjectById: (id?: string) => Subject | null;
+  getExamById: (id?: string) => any | null;
+  addAttendance?: (record: Partial<Attendance> & { id: string }) => void;
+  updateAttendance?: (id: string, patch: Partial<Attendance>) => void;
 
   // Statistics
   getStudentCount: () => number;

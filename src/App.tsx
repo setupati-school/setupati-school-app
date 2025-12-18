@@ -8,6 +8,7 @@ import { DashboardRoute } from '@/components/Dashboard';
 import { CircularsPage } from '@/components/Circulars';
 import { SubjectsPage } from '@/components/Subject';
 import { TimetablePage } from '@/components/Timetable';
+import { AttendancePage } from '@/components/Attendance';
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -123,12 +124,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/attendance',
-        element: (
-          <ComingSoon
-            title="Attendance Tracking"
-            subtitle="Attendance module coming soon..."
-          />
-        )
+        element: <AttendancePage />
       },
       {
         path: '/subjects',
