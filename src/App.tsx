@@ -44,6 +44,10 @@ const ExamResultsPage = React.lazy(() =>
   import('@/components/ExamResults/ExamResultsPage')
 );
 
+const StudentProfilePage = React.lazy(() =>
+  import('@/components/Students/StudentProfilePage')
+);
+
 const ResultsRoute: React.FC = () => {
   const { role } = useAuthStore();
 
@@ -137,6 +141,10 @@ export const router = createBrowserRouter([
       {
         path: '/results',
         element: <ResultsRoute />
+      },
+      {
+        path: '/profile',
+        element: <StudentProfilePage />
       }
     ]
   },

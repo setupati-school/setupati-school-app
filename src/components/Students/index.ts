@@ -1,6 +1,7 @@
 // Main components
 export { StudentDashboard } from './StudentDashboard';
 export { StudentProfileCard } from './StudentProfileCard';
+export { StudentProfilePage } from './StudentProfilePage';
 export { MyTimetableToday } from './MyTimetableToday';
 export { StudentQuickActions } from './StudentQuickActions';
 export { ExamResultsSummary } from './ExamResultsSummary';
