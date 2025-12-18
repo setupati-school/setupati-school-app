@@ -12,7 +12,7 @@ import { AttendancePage } from '@/components/Attendance';
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { I18nextProvider } from 'react-i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import {
   AuthLayout,
@@ -23,6 +23,8 @@ import { useAuthStore, useSchoolStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { TeachersPage } from './components/Teachers/TeachersPage';
 import { StudentsPage } from './components/Students/StudentsPage';
+import { Helmet } from "react-helmet";
+
 
 // ---------- Lazy-loaded layout & dashboards ----------
 const Main = React.lazy(() =>
@@ -161,6 +163,7 @@ export const router = createBrowserRouter([
 const App: React.FC = () => {
   const { initAuthListener } = useAuthStore();
   const { initCurrentUser } = useSchoolStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -174,6 +177,9 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
+        <Helmet>
+          <title>t{t('title')}</title>
+        </Helmet>
         <TooltipProvider>
           <Toaster />
           <SonnerToaster />
