@@ -22,6 +22,7 @@ import {
   getGreeting,
   PERIODS
 } from '../../lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export const TeacherDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ export const TeacherDashboard: React.FC = () => {
   const presentToday = getPresentStudentsToday();
   const recentCirculars = getRecentCirculars();
   const firstName = getFirstName(currentUser?.name, 'Teacher');
+  const {toast} = useToast();
 
   const todaySchedule = useMemo(() => {
     try {
@@ -83,8 +85,12 @@ export const TeacherDashboard: React.FC = () => {
           };
         })
         .sort((a, b) => a.time.localeCompare(b.time));
-    } catch {
-      return [];
+    } catch (err: any) {
+      console.error(`An error occurred: ${err}`)
+      toast({
+        title: 'Error',
+        description: 'An error occurred',
+      });
     }
   }, [attendance, currentUser, sections, subjects, teachers, timetables]);
 
@@ -136,8 +142,12 @@ export const TeacherDashboard: React.FC = () => {
             rate
           };
         });
-    } catch {
-      return [];
+    } catch(err: any) {
+      console.error(`An error occurred: ${err}`);
+      toast({
+        title: 'Error',
+        description: 'An error occurred',
+      });
     }
   }, [attendance, currentUser, sections, students, teachers]);
 
