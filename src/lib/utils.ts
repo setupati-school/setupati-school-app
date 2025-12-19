@@ -127,8 +127,19 @@ export const getInitials = (name?: string | null): string => {
   );
 };
 
-export const getFirstName = (name?: string | null, fallback = 'Student'): string => {
+export const getFirstName = (
+  name?: string | null,
+  fallback = 'Student'
+): string => {
   return name?.split(' ')?.[0] ?? fallback;
+};
+
+// Returns the current school day ("Monday"–"Saturday") or null for Sunday.
+export const getCurrentSchoolDay = (): DayOfWeek | null => {
+  const dayIndex = new Date().getDay(); // 0 = Sunday, 1 = Monday ...
+  if (dayIndex === 0) return null;
+  // DAYS_OF_WEEK starts from Monday at index 0
+  return DAYS_OF_WEEK[dayIndex - 1] ?? null;
 };
 
 type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';

@@ -13,10 +13,18 @@ import { getGreeting, getFirstName } from '../../lib/utils';
 
 export const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { getRecentCirculars, currentUser } = useSchoolStore();
+  const { getRecentCirculars, currentUser, getMySection, getMyGrade } =
+    useSchoolStore();
 
   const recentCirculars = getRecentCirculars() ?? [];
+  const section = getMySection ? getMySection() : null;
+  const grade = getMyGrade ? getMyGrade() : null;
+
   const firstName = getFirstName(currentUser?.name, 'Student');
+  const studentCirculars = recentCirculars.filter((circular) => {
+    const target = circular?.targeted_group?.toLowerCase?.() ?? 'all';
+    return target === 'all' || target === 'students' || target === 'student';
+  });
 
   return (
     <div className="space-y-6">
@@ -26,8 +34,16 @@ export const StudentDashboard = () => {
           {getGreeting()}, {firstName}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Here's what's happening today
+          Here&apos;s what&apos;s happening today
         </p>
+        {section && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Class:{' '}
+            <span className="font-medium text-foreground">
+              {grade?.grade_name ?? '—'} {section?.group_name ?? section?.section_name}
+            </span>
+          </p>
+        )}
       </div>
 
       {/* Main Grid */}
@@ -49,9 +65,9 @@ export const StudentDashboard = () => {
               viewAllPath="/circulars"
             />
             <CardContent>
-              {recentCirculars?.length > 0 ? (
+              {studentCirculars?.length > 0 ? (
                 <div className="space-y-2">
-                  {recentCirculars?.slice(0, 3)?.map((circular) => (
+                  {studentCirculars?.slice(0, 3)?.map((circular) => (
                     <button
                       key={circular?.id}
                       onClick={() => navigate('/circulars')}
