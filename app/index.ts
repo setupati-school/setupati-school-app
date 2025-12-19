@@ -75,6 +75,5 @@ app.get('/metrics', async (_req, res) => {
 
 const PORT3001 = 3001;
 app.listen(PORT3001, () => {
-  console.log(`Server running on http://localhost:${PORT3001}`);
   console.log(`Metrics available at http://localhost:${PORT3001}/metrics`);
 });
