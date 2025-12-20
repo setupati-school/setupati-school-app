@@ -19,6 +19,12 @@ import examResultRouter from './routes/examresultRoute.js';
 import examTimeTableRouter from './routes/examTimeTableRoute.js';
 import sectionRouter from './routes/sectionRoute.js';
 import axios from 'axios';
+import {
+  generalLimiter,
+  authLimiter,
+  readLimiter,
+  writeLimiter
+} from './middlewares/rateLimit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +38,18 @@ app.use(helmet());
 app.use(express.json());
 app.use(cors({ origin: true }));
 
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    return readLimiter(req, res, next);
+  } else if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    return writeLimiter(req, res, next);
+  }
+  return generalLimiter(req, res, next);
+});
+
+// Apply stricter rate limiting to auth routes (login, signup, password reset)
+app.use('/api/v1/auth', authLimiter, authRouters);
+
 app.use('/students', studentRoutes);
 app.use('/attendance', attendanceRouter);
 app.use('/grades', gradeRouter);
@@ -41,7 +59,6 @@ app.use('/timetables', timeTableRouter);
 app.use('/parents', parentRouter);
 app.use('/examresults', examResultRouter);
 app.use('/exam-timetables', examTimeTableRouter);
-app.use('/api/v1/auth', authRouters);
 app.use('/subjects', subjectRouter);
 app.use('/sections', sectionRouter);
 
