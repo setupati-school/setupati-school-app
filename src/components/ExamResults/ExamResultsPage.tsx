@@ -69,6 +69,7 @@ export const ExamResultsPage: React.FC = () => {
   const { subjects, setSubjects } = useSchoolStore();
 
   const isAdmin = role === 'admin';
+  const canCreateResults = role === 'admin' || role === 'teacher';
 
   const [results, setResults] = useState<ExamResultData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -422,7 +423,7 @@ export const ExamResultsPage: React.FC = () => {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          {isAdmin && (
+          {canCreateResults && (
             <Button onClick={() => setCreateModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Result
@@ -617,7 +618,7 @@ export const ExamResultsPage: React.FC = () => {
                   ? 'No results match your current filters. Try adjusting your search criteria.'
                   : 'There are no exam results available yet.'}
               </p>
-              {isAdmin && (
+              {canCreateResults && (
                 <Button onClick={() => setCreateModalOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Result

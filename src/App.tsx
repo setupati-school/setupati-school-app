@@ -53,7 +53,7 @@ const StudentProfilePage = React.lazy(() =>
 const ResultsRoute: React.FC = () => {
   const { role } = useAuthStore();
 
-  if (role === 'admin') {
+  if (role === 'admin' || role === 'teacher') {
     return <ExamResultsPage />;
   }
   return <StudentResultLookup />;
@@ -108,12 +108,18 @@ export const router = createBrowserRouter([
 
       {
         path: '/students',
-        element: <StudentsPage />
+        element: (
+          <RoleRoute allowedRoles={['admin', 'teacher']}>
+            <StudentsPage />
+          </RoleRoute>
+        )
       },
       {
         path: '/teachers',
         element: (
-          <TeachersPage />
+          <RoleRoute allowedRoles={['admin', 'teacher']}>
+            <TeachersPage />
+          </RoleRoute>
         )
       },
       {
