@@ -4,6 +4,7 @@ import { useSchoolStore } from '@/store/schoolStore';
 import { Bell, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { StudentProfileCard } from './StudentProfileCard';
 import { MyTimetableToday } from './MyTimetableToday';
 import { StudentQuickActions } from './StudentQuickActions';
 import { ExamResultsSummary } from './ExamResultsSummary';
@@ -29,6 +30,9 @@ export const StudentDashboard = () => {
           Here's what's happening today
         </p>
       </div>
+
+      {/* Profile Card */}
+      <StudentProfileCard />
 
       {/* Main Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
