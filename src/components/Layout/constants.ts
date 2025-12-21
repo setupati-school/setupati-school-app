@@ -7,7 +7,8 @@ import {
   FileText,
   ClipboardCheck,
   Settings,
-  UserRoundPlus
+  UserRoundPlus,
+  Award
 } from 'lucide-react';
 
 export const TeacherNavigationItems = [
@@ -22,12 +23,6 @@ export const TeacherNavigationItems = [
     label: 'Students',
     icon: GraduationCap,
     to: '/students'
-  },
-  {
-    id: 'teachers',
-    label: 'Teachers',
-    icon: Users,
-    to: '/teachers'
   },
   {
     id: 'subjects',
@@ -52,6 +47,12 @@ export const TeacherNavigationItems = [
     label: 'Circulars',
     icon: FileText,
     to: '/circulars'
+  },
+  {
+    id: 'results',
+    label: 'Results',
+    icon: Award,
+    to: '/results'
   },
   {
     id: 'settings',
@@ -69,18 +70,6 @@ export const StudentNavigationItems = [
     to: '/dashboard'
   },
   {
-    id: 'students',
-    label: 'Students',
-    icon: GraduationCap,
-    to: '/students'
-  },
-  {
-    id: 'teachers',
-    label: 'Teachers',
-    icon: Users,
-    to: '/teachers'
-  },
-  {
     id: 'subjects',
     label: 'Subjects',
     icon: BookOpen,
@@ -105,10 +94,10 @@ export const StudentNavigationItems = [
     to: '/circulars'
   },
   {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    to: '/settings'
+    id: 'results',
+    label: 'Results',
+    icon: Award,
+    to: '/results'
   }
 ];
 
@@ -154,6 +143,12 @@ export const AdminNavigationItems = [
     label: 'Circulars',
     icon: FileText,
     to: '/circulars'
+  },
+  {
+    id: 'results',
+    label: 'Results',
+    icon: Award,
+    to: '/results'
   },
   {
     id: 'account-creation',

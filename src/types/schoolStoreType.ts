@@ -10,10 +10,16 @@ export interface User {
 
 export interface Teacher {
   id: string;
-  subject_ids: string[];
-  section_ids: string[];
-  first_name: string;
-  last_name: string;
+  subject_ids?: string[];
+  section_ids?: string[];
+  subject_id?: string[];
+  section_id?: string[];
+  first_name?: string;
+  last_name?: string;
+  f_name?: string;
+  l_name?: string;
+  email?: string;
+  phone_num?: string;
   dob: string;
   gender: string;
   designation: string;
@@ -50,8 +56,11 @@ export interface Student {
 
 export interface Subject {
   id: string;
+  subject_id?: string;
   subject_name: string;
   grade_id: string;
+  teacher_id?: string;
+  description?: string;
   created_at: string;
   updated_at: string;
 }
@@ -68,9 +77,13 @@ export interface Section {
 
 export interface Grade {
   id: string;
+  grade_id?: string;
   grade_name: string;
   section_ids: string[];
+  subject_ids: string[];
+  subject_name: string[];
   ahm_staff_id: string;
+  teacher_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -111,6 +124,55 @@ export interface Homework {
   updated_at: string;
 }
 
+export type DayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday';
+
+export interface Timetable {
+  id?: string;
+  timetable_id?: string;
+  day_of_week: DayOfWeek;
+  period: number;
+  section_id: string;
+  subject_id: string;
+  teacher_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// API response wrapper for timetable
+export interface TimetableResponse {
+  id: string;
+  timeTable: Timetable;
+}
+
+export type ExamType = 'Unit Test' | 'Quarterly' | 'Half-Yearly' | 'Annual';
+
+export interface ExamTimetable {
+  id?: string;
+  exam_time_table_id?: string;
+  grade_id: string;
+  subject_id: string;
+  date?: string;
+  exam_date?: string;
+  start_date?: string;
+  start_time?: string;
+  end_time?: string;
+  exam_type: ExamType;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// API response wrapper for exam timetable
+export interface ExamTimetableResponse {
+  id: string;
+  examTimeTable: ExamTimetable;
+}
+
 // Store interface
 export interface SchoolStore {
   // Current user
@@ -125,6 +187,9 @@ export interface SchoolStore {
   attendance: Attendance[];
   circulars: Circular[];
   homework: Homework[];
+  timetables: Timetable[];
+  examTimetables: ExamTimetable[];
+  exams: any[];
 
   // UI State
   activeView: string;
@@ -146,12 +211,29 @@ export interface SchoolStore {
   setAttendance: (attendance: Attendance[]) => void;
   setCirculars: (circulars: Circular[]) => void;
   setHomework: (homework: Homework[]) => void;
+  setTimetables: (timetables: Timetable[]) => void;
+  setExamTimetables: (examTimetables: ExamTimetable[]) => void;
+  setExams: (exams: any[]) => void;
+  fetchExamsFromBackend: (studentId?: string) => Promise<any[]>;
+  getMyResults: () => any[];
+  getSubjectById: (id?: string) => Subject | null;
+  getExamById: (id?: string) => any | null;
+  addAttendance?: (record: Partial<Attendance> & { id: string }) => void;
+  updateAttendance?: (id: string, patch: Partial<Attendance>) => void;
 
   // Statistics
   getStudentCount: () => number;
   getTeacherCount: () => number;
   getPresentStudentsToday: () => number;
   getRecentCirculars: () => Circular[];
+
+  // Student-specific methods
+  getMyStudent: () => Student | null;
+  getMyAttendance: () => Attendance[];
+  getMyTimetable: () => Timetable[];
+  getMySubjects: () => Subject[];
+  getMySection: () => Section | null;
+  getMyGrade: () => Grade | null;
 
   initCurrentUser: () => void;
 }

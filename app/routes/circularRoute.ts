@@ -1,5 +1,4 @@
-import { Router, Request, Response } from 'express';
-import type circular from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createCircular,
   deleteCircularDetails,
@@ -7,43 +6,51 @@ import {
   searchCircular,
   updateCircularDetails
 } from '../service/circular/circular.js';
-type Circular = typeof circular;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
+import { validateBody } from '../middlewares/validateRequest.js';
+import {
+  createCircularSchema,
+  updateCircularSchema
+} from '../zod/circularSchema.js';
 
 const circularRouter = Router();
 
 circularRouter.post(
   '/create',
-  (req: Request<{ Circular: Circular }>, res: Response) => {
-    createCircular(req, res);
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(createCircularSchema),
+  (req,res) => {
+  createCircular(req,res);
   }
 );
 
-circularRouter.get(
-  '/search/:circular_id',
-  (req: Request<{ circular_id: string }>, res: Response) => {
-    searchCircular(req, res);
-  }
-);
+circularRouter.get('/search/:circular_id', isAuthenticated, (req, res) => {
+  searchCircular(req, res);
+});
 
 circularRouter.delete(
   '/delete/:circular_id',
-  (req: Request<{ circular_id: string }>, res: Response) => {
-    deleteCircularDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => {
+  deleteCircularDetails(req, res);
+  } 
 );
 
-circularRouter.get('/all', (req: Request, res: Response) => {
-  return getAllCirculars(req, res);
+circularRouter.get('/all', isAuthenticated, (req, res) => {
+  getAllCirculars(req, res);
 });
 
 circularRouter.put(
   '/update/:circular_id',
-  (
-    req: Request<{ circular_id: string; Circular: Partial<Circular> }>,
-    res: Response
-  ) => {
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(updateCircularSchema),
+  (req, res) => {
     updateCircularDetails(req, res);
-  }
+  } 
 );
 
 export default circularRouter;

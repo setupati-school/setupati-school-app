@@ -1,178 +1,124 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { StatsCard } from './StatsCard';
 import { useSchoolStore } from '@/store/schoolStore';
-import {
-  Users,
-  GraduationCap,
-  ClipboardCheck,
-  Bell,
-  Calendar,
-  BookOpen
-} from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+import { MyTimetableToday } from './MyTimetableToday';
+import { StudentQuickActions } from './StudentQuickActions';
+import { ExamResultsSummary } from './ExamResultsSummary';
+import { AttendanceSummary } from './AttendanceSummary';
+import { CardHeaderWithIcon, EmptyState } from './shared';
+import { getGreeting, getFirstName } from '../../lib/utils';
 
 export const StudentDashboard = () => {
-  const {
-    getStudentCount,
-    getTeacherCount,
-    getPresentStudentsToday,
-    getRecentCirculars
-  } = useSchoolStore();
+  const navigate = useNavigate();
+  const { getRecentCirculars, currentUser, getMySection, getMyGrade } =
+    useSchoolStore();
 
-  const studentCount = getStudentCount();
-  const teacherCount = getTeacherCount();
-  const presentToday = getPresentStudentsToday();
-  const recentCirculars = getRecentCirculars();
+  const recentCirculars = getRecentCirculars() ?? [];
+  const section = getMySection ? getMySection() : null;
+  const grade = getMyGrade ? getMyGrade() : null;
 
-  const attendanceRate =
-    studentCount > 0 ? Math.round((presentToday / studentCount) * 100) : 0;
+  const firstName = getFirstName(currentUser?.name, 'Student');
+  const studentCirculars = recentCirculars.filter((circular) => {
+    const target = circular?.targeted_group?.toLowerCase?.() ?? 'all';
+    return target === 'all' || target === 'students' || target === 'student';
+  });
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Students"
-          value={studentCount}
-          icon={GraduationCap}
-          description="Active enrollments"
-          trend={{ value: 12, isPositive: true }}
-        />
-        <StatsCard
-          title="Total Teachers"
-          value={teacherCount}
-          icon={Users}
-          description="Faculty members"
-          trend={{ value: 5, isPositive: true }}
-        />
-        <StatsCard
-          title="Present Today"
-          value={presentToday}
-          icon={ClipboardCheck}
-          description={`${attendanceRate}% attendance rate`}
-          trend={{ value: 8, isPositive: true }}
-        />
-        <StatsCard
-          title="Active Sections"
-          value={4}
-          icon={BookOpen}
-          description="Across all grades"
-        />
+      {/* Welcome Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">
+          {getGreeting()}, {firstName}!
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Here&apos;s what&apos;s happening today
+        </p>
+        {section && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Class:{' '}
+            <span className="font-medium text-foreground">
+              {grade?.grade_name ?? '—'} {section?.group_name ?? section?.section_name}
+            </span>
+          </p>
+        )}
       </div>
 
-      {/* Recent Activity and Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Recent Circulars */}
-        <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center space-x-2">
-              <Bell className="h-5 w-5 text-primary" />
-              <span>Recent Announcements</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {recentCirculars.length > 0 ? (
-              recentCirculars.map((circular) => (
-                <div
-                  key={circular.id}
-                  className="border-l-2 border-primary pl-3 py-2"
-                >
-                  <h4 className="font-medium text-sm text-foreground">
-                    {circular.title}
-                  </h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {circular.description.substring(0, 100)}...
-                  </p>
-                  <div className="flex items-center justify-between mt-2">
-                    <Badge variant="outline" className="text-xs">
-                      {circular.targeted_group}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(circular.issued_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No recent announcements
-              </p>
-            )}
-          </CardContent>
-        </Card>
+      {/* Main Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Stats Row */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <AttendanceSummary />
+            <ExamResultsSummary />
+          </div>
 
-        {/* Today's Schedule */}
-        <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <span>Today's Schedule</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-accent rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">Morning Assembly</p>
-                  <p className="text-xs text-muted-foreground">All Students</p>
+          {/* Announcements */}
+          <Card className="shadow-soft">
+            <CardHeaderWithIcon
+              icon={<Bell className="h-4 w-4 text-destructive" />}
+              iconBgClass="bg-destructive/10"
+              title="Announcements"
+              viewAllPath="/circulars"
+            />
+            <CardContent>
+              {studentCirculars?.length > 0 ? (
+                <div className="space-y-2">
+                  {studentCirculars?.slice(0, 3)?.map((circular) => (
+                    <button
+                      key={circular?.id}
+                      onClick={() => navigate('/circulars')}
+                      className="w-full flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors text-left group"
+                    >
+                      <div className="w-1 h-full min-h-[40px] rounded-full bg-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground line-clamp-1">
+                          {circular?.title ?? 'Untitled'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                          {circular?.description ?? ''}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {circular?.targeted_group ?? 'All'}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {circular?.issued_date
+                              ? new Date(
+                                  circular.issued_date
+                                ).toLocaleDateString()
+                              : ''}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 mt-1" />
+                    </button>
+                  ))}
                 </div>
-                <Badge variant="outline">9:00 AM</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-success-soft rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">Math Period - Grade 10A</p>
-                  <p className="text-xs text-muted-foreground">John Doe</p>
-                </div>
-                <Badge variant="outline">10:00 AM</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-warning-soft rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">Parent Meeting</p>
-                  <p className="text-xs text-muted-foreground">
-                    Conference Room
-                  </p>
-                </div>
-                <Badge variant="outline">2:00 PM</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              ) : (
+                <EmptyState
+                  icon={<Bell className="h-10 w-10" />}
+                  message="No announcements yet"
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Quick Actions */}
-        <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid gap-2">
-              <button className="p-3 text-left bg-primary-soft hover:bg-primary-soft/80 rounded-lg transition-colors">
-                <p className="font-medium text-sm text-primary">
-                  Mark Attendance
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Record today's attendance
-                </p>
-              </button>
-              <button className="p-3 text-left bg-accent hover:bg-accent/80 rounded-lg transition-colors">
-                <p className="font-medium text-sm text-accent-foreground">
-                  Add Student
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Register new student
-                </p>
-              </button>
-              <button className="p-3 text-left bg-success-soft hover:bg-success-soft/80 rounded-lg transition-colors">
-                <p className="font-medium text-sm text-success">
-                  Create Circular
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Send announcement
-                </p>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Right Column */}
+        <div className="space-y-6">
+          <MyTimetableToday />
+          <StudentQuickActions />
+        </div>
       </div>
     </div>
   );
 };
+
+export default StudentDashboard;

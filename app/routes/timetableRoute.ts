@@ -1,5 +1,4 @@
-import { Router, Request, Response } from 'express';
-import type timeTable from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createTimeTable,
   searchTimeTable,
@@ -7,43 +6,51 @@ import {
   getAllTimeTablesDetails,
   updateTimeTableDetails
 } from '../service/timetable/timetable.js';
-type TimeTable = typeof timeTable;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
+import { validateBody } from '../middlewares/validateRequest.js';
+import {
+  createTimetableSchema,
+  updateTimetableSchema
+} from '../zod/timetableSchema.js';
 
 const timeTableRouter = Router();
 
 timeTableRouter.post(
   '/create',
-  (req: Request<{ TimeTable: TimeTable }>, res: Response) => {
-    createTimeTable(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(createTimetableSchema),
+  (req, res) => {
+  createTimeTable(req, res);
+  } 
 );
 
-timeTableRouter.get(
-  '/search/:time_table_id',
-  (req: Request<{ time_table_id: string }>, res: Response) => {
-    searchTimeTable(req, res);
-  }
-);
 
+timeTableRouter.get('/search/:time_table_id', isAuthenticated, (req, res) => {
+  searchTimeTable(req, res);
+});
 timeTableRouter.delete(
   '/delete/:time_table_id',
-  (req: Request<{ time_table_id: string }>, res: Response) => {
-    deleteTimeTableDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => {
+  deleteTimeTableDetails(req, res);
+  } 
 );
 
-timeTableRouter.get('/all', (req: Request, res: Response) => {
-  return getAllTimeTablesDetails(req, res);
+timeTableRouter.get('/all', isAuthenticated, (req, res) => {
+  getAllTimeTablesDetails(req, res);
 });
 
 timeTableRouter.put(
   '/update/:time_table_id',
-  (
-    req: Request<{ time_table_id: string; TimeTable: Partial<TimeTable> }>,
-    res: Response
-  ) => {
-    updateTimeTableDetails(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  validateBody(updateTimetableSchema),
+  (req, res) => {
+  updateTimeTableDetails(req, res);
+  } 
 );
 
 export default timeTableRouter;

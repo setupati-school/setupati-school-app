@@ -25,6 +25,8 @@ export const useSchoolStore = create<SchoolStore>()(
         attendance: [],
         circulars: [],
         homework: [],
+        timetables: [],
+        examTimetables: [],
         exams: [], // grouped exam results from backend
         activeView: 'dashboard',
         sidebarCollapsed: false,
@@ -46,6 +48,8 @@ export const useSchoolStore = create<SchoolStore>()(
         setAttendance: (attendance) => set({ attendance }),
         setCirculars: (circulars) => set({ circulars }),
         setHomework: (homework) => set({ homework }),
+        setTimetables: (timetables) => set({ timetables }),
+        setExamTimetables: (examTimetables) => set({ examTimetables }),
         setCurrentLanguage: (code) => set({ currentLanguage: code }),
 
         // exams (grouped) management
@@ -138,6 +142,8 @@ export const useSchoolStore = create<SchoolStore>()(
             attendance: [],
             circulars: [],
             homework: [],
+            timetables: [],
+            examTimetables: [],
             exams: [],
             activeView: 'dashboard',
             sidebarCollapsed: false,
@@ -153,6 +159,15 @@ export const useSchoolStore = create<SchoolStore>()(
             (a) => a.date === today && a.status === 'present'
           ).length;
         },
+        // attendance helpers
+        addAttendance: (record) => {
+          set((state) => ({ attendance: [...(state.attendance || []), record] }));
+        },
+        updateAttendance: (id, patch) => {
+          set((state) => ({
+            attendance: (state.attendance || []).map((r) => (r.id === id ? { ...r, ...patch } : r))
+          }));
+        },
         getRecentCirculars: () =>
           get()
             .circulars.sort(
@@ -160,7 +175,61 @@ export const useSchoolStore = create<SchoolStore>()(
                 new Date(b.issued_date).getTime() -
                 new Date(a.issued_date).getTime()
             )
-            .slice(0, 5)
+            .slice(0, 5),
+
+        // Student-specific methods
+        getMyStudent: () => {
+          const state = get();
+          const currentUser = state.currentUser;
+          if (!currentUser || currentUser.role !== 'student') return null;
+          // Match by user id or find student with matching email/id
+          return (
+            state.students.find(
+              (s) => s.id === currentUser.id || s.id === currentUser.email
+            ) ?? state.students[0] ?? null
+          );
+        },
+
+        getMyAttendance: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return [];
+          return state.attendance.filter((a) => a.student_id === student.id);
+        },
+
+        getMyTimetable: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return [];
+          return state.timetables.filter(
+            (t) => t.section_id === student.section_id
+          );
+        },
+
+        getMySubjects: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return [];
+          return state.subjects.filter((s) =>
+            student.subject_ids?.includes(s.id)
+          );
+        },
+
+        getMySection: () => {
+          const state = get();
+          const student = state.getMyStudent?.() ?? null;
+          if (!student) return null;
+          return (
+            state.sections.find((s) => s.id === student.section_id) ?? null
+          );
+        },
+
+        getMyGrade: () => {
+          const state = get();
+          const section = state.getMySection?.() ?? null;
+          if (!section) return null;
+          return state.grades.find((g) => g.id === section.grade_id) ?? null;
+        }
       }),
       {
         name: 'school-store'
@@ -193,7 +262,49 @@ export const initializeSampleData = () => {
       pincode: '400001',
       created_at: '2025-07-19T13:26:00Z',
       updated_at: '2025-07-19T13:26:00Z'
+    },
+    {
+      id: 'student_002',
+      section_id: 'section_A',
+      subject_ids: ['SUBJ-MATH', 'SUBJ-ENG'],
+      roll_no: '002',
+      dob: '2010-05-10',
+      f_name: 'Ravi',
+      l_name: 'Kumar',
+      gender: 'Male',
+      phone_num1: '+91-9123456780',
+      address_line1: '45 Park Street',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '400002',
+      created_at: '2025-07-19T13:26:00Z',
+      updated_at: '2025-07-19T13:26:00Z'
+    },
+    {
+      id: 'student_003',
+      section_id: 'section_B',
+      subject_ids: ['SUBJ-SCI', 'SUBJ-HIST'],
+      roll_no: '001',
+      dob: '2010-08-12',
+      f_name: 'Anita',
+      l_name: 'Desai',
+      gender: 'Female',
+      phone_num1: '+91-9988776655',
+      address_line1: '78 Lake Road',
+      city: 'Pune',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '411001',
+      created_at: '2025-07-19T13:26:00Z',
+      updated_at: '2025-07-19T13:26:00Z'
     }
+  ]);
+
+  // add sample sections
+  store.setSections([
+    { id: 'section_A', section_name: 'Grade 5 - A', grade_id: 'grade_5', class_teacher_id: 'teacher_001', group_name: 'A', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 'section_B', section_name: 'Grade 5 - B', grade_id: 'grade_5', class_teacher_id: 'teacher_002', group_name: 'B', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
   ]);
 
   store.setTeachers([
@@ -215,10 +326,10 @@ export const initializeSampleData = () => {
   ]);
 
   store.setSubjects([
-    { id: 'SUBJ-MATH', name: 'Mathematics' },
-    { id: 'SUBJ-ENG', name: 'English' },
-    { id: 'SUBJ-SCI', name: 'Science' },
-    { id: 'SUBJ-HIST', name: 'History' }
+    { id: 'SUBJ-MATH', subject_name: 'Mathematics', grade_id: 'grade_1', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+    { id: 'SUBJ-ENG', subject_name: 'English', grade_id: 'grade_1', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+    { id: 'SUBJ-SCI', subject_name: 'Science', grade_id: 'grade_2', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+    { id: 'SUBJ-HIST', subject_name: 'History', grade_id: 'grade_2', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' }
   ]);
 
   // grouped exam results (backend-shaped)

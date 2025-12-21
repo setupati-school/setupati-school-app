@@ -10,7 +10,8 @@ export const studentSchema = z
       l_name: z.string().min(1, 'Last name is required'),
       email: z.string().email('Invalid email'),
       roll_no: z.string().min(1, 'Roll number required'),
-      grade_name: z.string().min(1, 'Grade/Class required'),
+      grade_name: z.string().min(1, 'Grade/Class is required'),
+      section_name: z.string().min(1, 'Section is required'),
       dob: z.string().min(1, 'Date of birth is required'),
       gender: genderEnum,
       phone_num: z
@@ -96,4 +97,49 @@ export const resetPasswordSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword']
+  });
+
+  export const circularSchema = z.object({
+    title: z.string().min(1, 'Title is required').max(200, 'Title is too long'),
+    description: z
+      .string()
+      .min(1, 'Description is required')
+      .max(5000, 'Description is too long'),
+    issued_by: z.string().min(1, 'Issued by is required'),
+    targeted_group: z.enum(['All', 'Students', 'Teachers', 'Parents'], {
+      required_error: 'Please select a target group'
+    }),
+    issued_date: z.string().min(1, 'Issue date is required'),
+    valid_until: z.string().min(1, 'Expiry date is required')
+  });
+
+  export const timetableSchema = z.object({
+    day_of_week: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], {
+      required_error: 'Please select a day'
+    }),
+    period: z.number().min(1, 'Period must be at least 1').max(8, 'Period cannot exceed 8'),
+    section_id: z.string().min(1, 'Please select a section'),
+    subject_id: z.string().min(1, 'Please select a subject'),
+    teacher_id: z.string().min(1, 'Please select a teacher')
+  });
+
+  export const subjectSchema = z.object({
+    subject_name: z
+      .string()
+      .min(1, 'Subject name is required')
+      .max(100, 'Subject name is too long'),
+    grade_id: z.string().min(1, 'Please select a grade'),
+    teacher_id: z.string().min(1, 'Please select a teacher'),
+    description: z.string().optional()
+  });
+
+  export const examTimetableSchema = z.object({
+    grade_id: z.string().min(1, 'Please select a grade'),
+    subject_id: z.string().min(1, 'Please select a subject'),
+    date: z.string().min(1, 'Please select an exam date'),
+    start_time: z.string().min(1, 'Please enter start time'),
+    end_time: z.string().min(1, 'Please enter end time'),
+    exam_type: z.enum(['Unit Test', 'Quarterly', 'Half-Yearly', 'Annual'], {
+      required_error: 'Please select an exam type'
+    })
   });

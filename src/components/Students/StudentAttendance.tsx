@@ -6,6 +6,7 @@ import { Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useSchoolStore } from '@/store/schoolStore';
 import { formatDate } from '../../lib/utils';
 import { AttendanceRecord, AttendanceStatus } from '../../types/type';
+import { attendanceRate } from '../../lib/utils';
 
 export const StudentAttendance = () => {
   const { getMyAttendance } = useSchoolStore();
@@ -28,7 +29,6 @@ export const StudentAttendance = () => {
   const present = records.filter((r) => r.status === 'present').length;
   const absent = records.filter((r) => r.status === 'absent').length;
   const leave = records.filter((r) => r.status === 'leave').length;
-  const attendanceRate = total > 0 ? Math.round((present / total) * 100) : 0;
 
   const badgeFor = (s: AttendanceStatus) => {
     switch (s) {

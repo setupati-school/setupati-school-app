@@ -5,10 +5,14 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { Gallery, Forbidden, LandingPage, NotFound } from '@/pages';
 import { DashboardRoute } from '@/components/Dashboard';
+import { CircularsPage } from '@/components/Circulars';
+import { SubjectsPage } from '@/components/Subject';
+import { TimetablePage } from '@/components/Timetable';
+import { AttendancePage } from '@/components/Attendance';
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { I18nextProvider } from 'react-i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import {
   AuthLayout,
@@ -17,6 +21,10 @@ import {
 } from '@/components/Authentication';
 import { useAuthStore, useSchoolStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { TeachersPage } from './components/Teachers/TeachersPage';
+import { StudentsPage } from './components/Students/StudentsPage';
+import { Helmet } from "react-helmet";
+
 
 // ---------- Lazy-loaded layout & dashboards ----------
 const Main = React.lazy(() =>
@@ -29,6 +37,27 @@ const Main = React.lazy(() =>
 const SignUpForm = React.lazy(() =>
   import('@/components/admin').then((m) => ({ default: m.SignUpForm }))
 );
+
+const StudentResultLookup = React.lazy(() =>
+  import('@/components/Students/StudentResultLookup')
+);
+
+const ExamResultsPage = React.lazy(() =>
+  import('@/components/ExamResults/ExamResultsPage')
+);
+
+const StudentProfilePage = React.lazy(() =>
+  import('@/components/Students/StudentProfilePage')
+);
+
+const ResultsRoute: React.FC = () => {
+  const { role } = useAuthStore();
+
+  if (role === 'admin' || role === 'teacher') {
+    return <ExamResultsPage />;
+  }
+  return <StudentResultLookup />;
+};
 
 const ComingSoon: React.FC<{ title: string; subtitle: string }> = ({
   title,
@@ -52,7 +81,6 @@ export const router = createBrowserRouter([
     path: '/gallery',
     element: <Gallery />
   },
-
   // Auth pages (login / forgot / reset)
   {
     path: 'auth/login',
@@ -81,19 +109,17 @@ export const router = createBrowserRouter([
       {
         path: '/students',
         element: (
-          <ComingSoon
-            title="Student Section"
-            subtitle="Student module coming soon..."
-          />
+          <RoleRoute allowedRoles={['admin', 'teacher']}>
+            <StudentsPage />
+          </RoleRoute>
         )
       },
       {
         path: '/teachers',
         element: (
-          <ComingSoon
-            title="Teacher Section"
-            subtitle="Teacher module coming soon..."
-          />
+          <RoleRoute allowedRoles={['admin', 'teacher']}>
+            <TeachersPage />
+          </RoleRoute>
         )
       },
       {
@@ -106,39 +132,27 @@ export const router = createBrowserRouter([
       },
       {
         path: '/timetable',
-        element: (
-          <ComingSoon
-            title="Timetable Management"
-            subtitle="Timetable module coming soon..."
-          />
-        )
+        element: <TimetablePage />
       },
       {
         path: '/attendance',
-        element: (
-          <ComingSoon
-            title="Attendance Tracking"
-            subtitle="Attendance module coming soon..."
-          />
-        )
+        element: <AttendancePage />
       },
       {
         path: '/subjects',
-        element: (
-          <ComingSoon
-            title="Subjects Management"
-            subtitle="Subjects module coming soon..."
-          />
-        )
+        element: <SubjectsPage />
       },
       {
         path: '/circulars',
-        element: (
-          <ComingSoon
-            title="Circulars & Announcements"
-            subtitle="Circulars module coming soon..."
-          />
-        )
+        element: <CircularsPage />
+      },
+      {
+        path: '/results',
+        element: <ResultsRoute />
+      },
+      {
+        path: '/profile',
+        element: <StudentProfilePage />
       }
     ]
   },
@@ -155,6 +169,7 @@ export const router = createBrowserRouter([
 const App: React.FC = () => {
   const { initAuthListener } = useAuthStore();
   const { initCurrentUser } = useSchoolStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -168,6 +183,9 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
+        <Helmet>
+          <title>t{t('title')}</title>
+        </Helmet>
         <TooltipProvider>
           <Toaster />
           <SonnerToaster />

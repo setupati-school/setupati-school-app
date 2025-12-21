@@ -12,3 +12,5 @@ export const mapDocsWithKey = <T, K extends string>(
       }) as { id: string } & Record<K, T | null>
   );
 };
+
+export const now = new Date().toISOString();
