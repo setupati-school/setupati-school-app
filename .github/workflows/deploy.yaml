@@ -1,6 +1,7 @@
 name: Deployment
 
 on:
+  workflow_trigger:
   push:
     branches:
       - main
