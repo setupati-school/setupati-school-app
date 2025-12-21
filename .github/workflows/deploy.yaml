@@ -13,6 +13,7 @@ jobs:
   sync-secrets:
     name: 🔐 Decrypt & Sync Secrets (SOPS)
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request' && (startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/releases/release'))
     permissions:
       contents: read
 
@@ -132,9 +133,6 @@ jobs:
             echo "deploy=false" >> $GITHUB_ENV
             echo "ℹ️ No changes in app/"
           fi
-
-      - name: Debug secret length
-        run: echo "Length ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
