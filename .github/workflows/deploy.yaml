@@ -136,6 +136,9 @@ jobs:
       - name: Debug secret length
         run: echo "Length ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
 
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
       - name: Decode Firebase service account
         shell: bash
         run: |
