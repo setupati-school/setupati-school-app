@@ -137,27 +137,26 @@ jobs:
         run: echo "Length ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
 
       - name: Decode Firebase service account
+        shell: bash
         run: |
           echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | base64 --decode > sa.json
-          echo "FIREBASE_SA_JSON=$(cat sa.json)" >> $GITHUB_ENV
-
 
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ env.FIREBASE_SA_JSON }}
-          projectId: setupati-school-app
-          channelId: pr-${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          firebase hosting:channel:deploy pr-${{ github.event.pull_request.number }} \
+            --project setupati-school-app
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa.json
 
       - name: 🚀 Deploy Live
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_HOSTING_TEST }}
-          projectId: setupati-school-app
-          channelId: live
+        shell: bash
+        run: |
+          firebase deploy --only hosting --project setupati-school-app
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa.json
+
 
       - name: 🛠️ Deploy Backend to Render
         if: env.deploy == 'true'
