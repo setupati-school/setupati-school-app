@@ -134,12 +134,18 @@ jobs:
       - name: Debug secret length
         run: echo "Length ${#FIREBASE_SERVICE_ACCOUNT_HOSTING}"
 
+      - name: Decode Firebase service account
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT_HOSTING" | base64 --decode > sa.json
+          echo "FIREBASE_SA_JSON=$(cat sa.json)" >> $GITHUB_ENV
+
+
       - name: 🌐 Deploy Preview (Pull Request)
         if: github.event_name == 'pull_request'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: $FIREBASE_SERVICE_ACCOUNT_HOSTING
+          firebaseServiceAccount: ${{ env.FIREBASE_SA_JSON }}
           projectId: setupati-school-app
           channelId: pr-${{ github.event.pull_request.number }}
 
