@@ -8,6 +8,7 @@ import { Search, Plus, Filter, RefreshCw, Loader2 } from 'lucide-react';
 import { StudentsList } from './StudentsList';
 import api from '@/lib/axiosConfig';
 import type { Student, Section, Grade } from '@/types/schoolStoreType';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export const StudentsPage = () => {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ export const StudentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Debounce search term to reduce filtering operations
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -84,17 +88,9 @@ export const StudentsPage = () => {
     fetchStudents();
   }, [fetchStudents]);
 
-  const filteredStudents = (students ?? []).filter((student) => {
-    const firstName = student?.f_name || '';
-    const lastName = student?.l_name || '';
-    const rollNo = student?.roll_no || '';
-
-    return (
-      firstName?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-      lastName?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-      rollNo?.toLowerCase()?.includes(searchTerm?.toLowerCase())
-    );
-  });
+  // Note: Filtering is now handled in StudentsList component with pagination
+  // This is kept for backward compatibility but StudentsList handles its own filtering
+  const filteredStudents = students ?? [];
 
   return (
     <>
@@ -173,7 +169,7 @@ export const StudentsPage = () => {
 
         <StudentsList
           students={filteredStudents}
-          searchTerm={searchTerm}
+          searchTerm={debouncedSearchTerm}
           loading={loading}
           onRefresh={fetchStudents}
           isAdmin={isAdmin}

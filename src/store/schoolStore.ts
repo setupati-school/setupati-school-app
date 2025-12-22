@@ -232,7 +232,22 @@ export const useSchoolStore = create<SchoolStore>()(
         }
       }),
       {
-        name: 'school-store'
+        name: 'school-store',
+        // Selective persistence - only persist essential data to reduce localStorage size
+        partialize: (state) => ({
+          // Only persist UI state and current user, not large data arrays
+          currentUser: state.currentUser,
+          activeView: state.activeView,
+          sidebarCollapsed: state.sidebarCollapsed,
+          currentLanguage: state.currentLanguage,
+          // Optionally persist a small subset of frequently accessed data
+          // But limit size to prevent localStorage bloat
+          subjects: state.subjects.slice(0, 50), // Limit to 50 most recent
+          sections: state.sections.slice(0, 20), // Limit to 20 most recent
+          grades: state.grades.slice(0, 20), // Limit to 20 most recent
+        }),
+        // Version for migration handling
+        version: 1,
       }
     )
   )
