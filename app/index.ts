@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import compression from 'compression';
 import studentRoutes from './routes/studentRoute.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -27,6 +28,20 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Compression middleware - compress responses for better performance on slow connections
+app.use(compression({
+  level: 6, // Compression level (1-9, 6 is a good balance)
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression for all other requests
+    return compression.filter(req, res);
+  }
+}));
 
 app.use(helmet());
 app.use(express.json());

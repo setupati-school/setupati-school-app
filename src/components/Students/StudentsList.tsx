@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ import { ViewStudentDialog } from './ViewStudentDialog';
 import { EditStudentForm } from './EditStudentForm';
 import { DeleteStudentDialog } from './DeleteStudentDialog';
 import { getGrade, getSection, getInitial as getInitials, formatDate } from '../../lib/utils';
+import { Pagination } from '@/components/ui/pagination';
 
 
 interface StudentsListProps {
@@ -54,6 +55,8 @@ export const StudentsList = ({
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Optimized for mobile - show 10 items per page
 
   const handleView = (student: Student) => {
     setSelectedStudent(student);
@@ -73,6 +76,32 @@ export const StudentsList = ({
   const handleSuccess = () => {
     onRefresh?.();
   };
+
+  // Filter students based on search term
+  const filteredStudents = useMemo(() => {
+    return (students ?? []).filter((student) => {
+      const firstName = student?.f_name || '';
+      const lastName = student?.l_name || '';
+      const rollNo = student?.roll_no || '';
+
+      return (
+        firstName?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+        lastName?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+        rollNo?.toLowerCase()?.includes(searchTerm?.toLowerCase())
+      );
+    });
+  }, [students, searchTerm]);
+
+  // Reset to page 1 when search term changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
   if (loading) {
     return (
@@ -133,7 +162,7 @@ export const StudentsList = ({
             <CardTitle className="flex items-center justify-between">
               <span>Student Records</span>
               <Badge variant="outline" className="text-xs">
-                {students?.length ?? 0} student{(students?.length ?? 0) !== 1 ? 's' : ''}
+                {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -157,7 +186,7 @@ export const StudentsList = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {students?.map((student) => {
+                  {paginatedStudents.map((student) => {
                     const section = getSection(student?.section_id);
                     const grade = getGrade(student?.section_id);
 
@@ -315,6 +344,18 @@ export const StudentsList = ({
                 </TableBody>
               </Table>
             </div>
+            {/* Pagination */}
+            {filteredStudents.length > itemsPerPage && (
+              <div className="mt-4 pt-4 border-t">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredStudents.length}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

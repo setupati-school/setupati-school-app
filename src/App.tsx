@@ -5,10 +5,26 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { Gallery, Forbidden, LandingPage, NotFound } from '@/pages';
 import { DashboardRoute } from '@/components/Dashboard';
-import { CircularsPage } from '@/components/Circulars';
-import { SubjectsPage } from '@/components/Subject';
-import { TimetablePage } from '@/components/Timetable';
-import { AttendancePage } from '@/components/Attendance';
+
+// Lazy load heavy pages for better initial load
+const CircularsPage = React.lazy(() =>
+  import('@/components/Circulars').then((m) => ({ default: m.CircularsPage }))
+);
+const SubjectsPage = React.lazy(() =>
+  import('@/components/Subject').then((m) => ({ default: m.SubjectsPage }))
+);
+const TimetablePage = React.lazy(() =>
+  import('@/components/Timetable').then((m) => ({ default: m.TimetablePage }))
+);
+const AttendancePage = React.lazy(() =>
+  import('@/components/Attendance').then((m) => ({ default: m.AttendancePage }))
+);
+const TeachersPage = React.lazy(() =>
+  import('@/components/Teachers/TeachersPage').then((m) => ({ default: m.TeachersPage }))
+);
+const StudentsPage = React.lazy(() =>
+  import('@/components/Students/StudentsPage').then((m) => ({ default: m.StudentsPage }))
+);
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -21,9 +37,8 @@ import {
 } from '@/components/Authentication';
 import { useAuthStore, useSchoolStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { TeachersPage } from './components/Teachers/TeachersPage';
-import { StudentsPage } from './components/Students/StudentsPage';
 import { Helmet } from "react-helmet";
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 
 // ---------- Lazy-loaded layout & dashboards ----------
@@ -69,7 +84,38 @@ const ComingSoon: React.FC<{ title: string; subtitle: string }> = ({
   </div>
 );
 
-const queryClient = new QueryClient();
+// Configure QueryClient for mobile optimization
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache data for 5 minutes before considering it stale
+      staleTime: 5 * 60 * 1000,
+      // Keep unused data in cache for 10 minutes
+      gcTime: 10 * 60 * 1000,
+      // Disable refetch on window focus for mobile (saves battery and data)
+      refetchOnWindowFocus: false,
+      // Disable refetch on reconnect for mobile (prevents unnecessary calls)
+      refetchOnReconnect: false,
+      // Retry logic with exponential backoff for network failures
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors (client errors)
+        if (error?.response?.status >= 400 && error?.response?.status < 500) {
+          return false;
+        }
+        // Retry up to 3 times for network errors
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Network mode: prefer online but allow offline cache
+      networkMode: 'online',
+    },
+    mutations: {
+      // Retry mutations once on network failure
+      retry: 1,
+      retryDelay: 1000,
+    },
+  },
+});
 
 export const router = createBrowserRouter([
   // Public pages
@@ -110,7 +156,9 @@ export const router = createBrowserRouter([
         path: '/students',
         element: (
           <RoleRoute allowedRoles={['admin', 'teacher']}>
-            <StudentsPage />
+            <Suspense fallback={<LoadingSpinner />}>
+              <StudentsPage />
+            </Suspense>
           </RoleRoute>
         )
       },
@@ -118,7 +166,9 @@ export const router = createBrowserRouter([
         path: '/teachers',
         element: (
           <RoleRoute allowedRoles={['admin', 'teacher']}>
-            <TeachersPage />
+            <Suspense fallback={<LoadingSpinner />}>
+              <TeachersPage />
+            </Suspense>
           </RoleRoute>
         )
       },
@@ -132,19 +182,35 @@ export const router = createBrowserRouter([
       },
       {
         path: '/timetable',
-        element: <TimetablePage />
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <TimetablePage />
+          </Suspense>
+        )
       },
       {
         path: '/attendance',
-        element: <AttendancePage />
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <AttendancePage />
+          </Suspense>
+        )
       },
       {
         path: '/subjects',
-        element: <SubjectsPage />
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <SubjectsPage />
+          </Suspense>
+        )
       },
       {
         path: '/circulars',
-        element: <CircularsPage />
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <CircularsPage />
+          </Suspense>
+        )
       },
       {
         path: '/results',
@@ -181,26 +247,28 @@ const App: React.FC = () => {
   }, [initAuthListener, initCurrentUser]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <I18nextProvider i18n={i18n}>
-        <Helmet>
-          <title>t{t('title')}</title>
-        </Helmet>
-        <TooltipProvider>
-          <Toaster />
-          <SonnerToaster />
-          <Suspense
-            fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <LoadingSpinner />
-              </div>
-            }
-          >
-            <RouterProvider router={router} />
-          </Suspense>
-        </TooltipProvider>
-      </I18nextProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>
+          <Helmet>
+            <title>t{t('title')}</title>
+          </Helmet>
+          <TooltipProvider>
+            <Toaster />
+            <SonnerToaster />
+            <Suspense
+              fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <LoadingSpinner />
+                </div>
+              }
+            >
+              <RouterProvider router={router} />
+            </Suspense>
+          </TooltipProvider>
+        </I18nextProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

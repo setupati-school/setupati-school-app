@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -75,6 +77,11 @@ export const ExamResultsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Optimized for mobile
+
+  // Debounce search query to reduce filtering operations
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const [selectedResult, setSelectedResult] = useState<ExamResultData | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -161,8 +168,9 @@ export const ExamResultsPage: React.FC = () => {
   const filteredResults = useMemo(() => {
     return results
       .filter((result) => {
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
+        // Use debounced search query for better performance
+        if (debouncedSearchQuery) {
+          const query = debouncedSearchQuery.toLowerCase();
           const matchesSearch =
             result?.student_id?.toLowerCase().includes(query) ||
             result?.exam_id?.toLowerCase().includes(query);
@@ -181,7 +189,18 @@ export const ExamResultsPage: React.FC = () => {
         (a, b) =>
           new Date(b?.created_at).getTime() - new Date(a?.created_at).getTime()
       );
-  }, [results, searchQuery, filterStatus]);
+  }, [results, debouncedSearchQuery, filterStatus]);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, filterStatus]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedResults = filteredResults.slice(startIndex, endIndex);
 
   const stats = useMemo(() => {
     const total = results.length;
@@ -532,7 +551,7 @@ export const ExamResultsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredResults.map((result) => {
+                  {paginatedResults.map((result) => {
                     const isPassed =
                       result?.exam_result?.pass_or_fail?.toLowerCase() === 'pass';
                     return (
@@ -603,6 +622,18 @@ export const ExamResultsPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {/* Pagination */}
+            {filteredResults.length > itemsPerPage && (
+              <div className="p-4 border-t">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredResults.length}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
