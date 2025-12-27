@@ -2,27 +2,80 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image" href="/school.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/school.png" />
+
+    <!-- Viewport Configuration for Mobile-First -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1e40af" />
-    <meta name="description" content="School Management System - Access your academic information, attendance, and results" />
+    <meta
+      name="description"
+      content="Setupati School Management System - academic information, attendance, exam results, and school announcements"
+    />
+    <meta
+      name="keywords"
+      content="school management, education, attendance, results, timetable"
+    />
+    <meta name="author" content="Setupati School" />
+
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Load only required font weights (400 and 500) for better performance -->
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Apple PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Setupati School" />
+    <link rel="apple-touch-icon" href="/school.png" />
+
+    <!-- Microsoft PWA Support -->
+    <meta name="msapplication-TileImage" content="/school.png" />
+    <meta name="msapplication-TileColor" content="#1e40af" />
+    <meta name="msapplication-navbutton-color" content="#1e40af" />
+
+    <!-- Security Headers -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://translate.google.com https://translate.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://translate.googleapis.com; frame-src https://translate.google.com;"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta
+      http-equiv="Referrer-Policy"
+      content="strict-origin-when-cross-origin"
+    />
+
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Font Loading with Performance Optimization -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="/school.png" as="image" type="image/png" />
+
+    <title>Setupati School Management System</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <div id="google_translate_element" style="display: none;"></div>
 
+    <!-- Google Translate Integration -->
+    <div id="google_translate_element" style="display: none"></div>
     <script type="text/javascript">
       function googleTranslateElementInit() {
         new google.translate.TranslateElement(
           {
             pageLanguage: 'en',
-            includedLanguages: 'ta,en', // add more if needed
+            includedLanguages: 'ta,en',
             layout: google.translate.TranslateElement.InlineLayout.SIMPLE
           },
           'google_translate_element'
@@ -31,5 +84,18 @@
     </script>
     <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
+    <!-- Offline Detection -->
+    <script>
+      // Basic offline detection
+      window.addEventListener('online', () => {
+        console.log('App is online');
+        document.body.classList.remove('offline');
+      });
+
+      window.addEventListener('offline', () => {
+        console.log('App is offline');
+        document.body.classList.add('offline');
+      });
+    </script>
   </body>
 </html>
