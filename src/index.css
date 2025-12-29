@@ -206,6 +206,46 @@ body .skiptranslate {
   font-weight: 500;
 }
 
+/* Mobile-First Touch Target Utilities */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-target-lg {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Mobile-first spacing utilities */
+  .mobile-padding {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+
+  .mobile-margin {
+    @apply m-3 sm:m-4 md:m-6;
+  }
+
+  /* Mobile-first text sizing */
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-heading {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  /* Mobile-first button spacing */
+  .mobile-button-group {
+    @apply space-x-2 sm:space-x-3 md:space-x-4;
+  }
+
+  .mobile-button-group-vertical {
+    @apply space-y-2 sm:space-y-3 md:space-y-4;
+  }
+}
+
 /* PWA Install Button Styles */
 .pwa-install-button {
   position: fixed;
@@ -222,6 +262,8 @@ body .skiptranslate {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   transition: all 0.2s ease;
+  min-height: 44px; /* Ensure touch target */
+  min-width: 44px;
 }
 
 .pwa-install-button:hover {

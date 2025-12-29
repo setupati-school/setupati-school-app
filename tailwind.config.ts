@@ -112,6 +112,19 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out'
+      },
+      // Mobile-first touch target utilities
+      minHeight: {
+        touch: '44px',
+        'touch-lg': '48px'
+      },
+      minWidth: {
+        touch: '44px',
+        'touch-lg': '48px'
+      },
+      spacing: {
+        touch: '44px',
+        'touch-lg': '48px'
       }
     }
   },

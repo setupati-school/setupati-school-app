@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import type attendance from '@setupati-school/setupati-types/models';
+import { Attendance } from '@setupati-school/setupati-types/models';
 import logger from '../../utils/logger.js';
 import {
   addAttendance,
@@ -8,12 +8,8 @@ import {
   updateAttendance,
   searchAttendance as searchAttendanceApi
 } from '../../api/attendance/attendance.js';
-type Attendance = typeof attendance;
 
-export const createAttendance = async (
-  req: Request<{ Attendance: Attendance }>,
-  res: Response
-) => {
+export const createAttendance = async (req: Request, res: Response) => {
   try {
     const { body: data } = req ?? {};
     const id = await addAttendance(data);
@@ -73,7 +69,7 @@ export const getAllAttendance = async (req: Request, res: Response) => {
 };
 
 export const updateAttendanceDetails = async (
-  req: Request<{ attendance_id: string; Attendance: Partial<Attendance> }>,
+  req: Request<{ attendance_id: string }>,
   res: Response
 ) => {
   try {
