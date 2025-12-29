@@ -8,6 +8,8 @@ import {
   searchCircular as searchCircularApi
 } from '../../api/circular/circular.js';
 import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
+import { sendCircularNotification } from '../../utils/emailService.js';
+import { getRecipientEmails } from '../../utils/getRecipientEmails.js';
 
 interface CircularWithDates extends Record<string, unknown> {
   issued_date?: string;
@@ -18,12 +20,43 @@ export const createCircular = async (req: Request, res: Response) => {
   try {
     const data = req?.body || {};
     const id = await addCircular(data);
+
+    // Send email notifications asynchronously (don't block the response)
+    sendCircularEmail(data).catch((err) => {
+      logger.error('Failed to send circular notification emails:', err);
+    });
+
     res.status(201).json({ id });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
     logger.error('Error creating circular:', message);
     res.status(httpCode).json({ error: message });
   }
+};
+
+const sendCircularEmail = async (circularData: CircularWithDates) => {
+  const targetedGroup = circularData?.targeted_group as
+    | 'All'
+    | 'Students'
+    | 'Teachers'
+    | 'Parents';
+
+  const emails = await getRecipientEmails(targetedGroup);
+
+  if (emails.length === 0) {
+    logger.info('No recipients found for circular notification');
+    return;
+  }
+
+  await sendCircularNotification(emails, {
+    title: String(circularData?.title || ''),
+    description: String(circularData?.description || ''),
+    issued_by: String(circularData?.issued_by || ''),
+    issued_date: String(circularData?.issued_date || ''),
+    valid_until: String(circularData?.valid_until || ''),
+    targeted_group: targetedGroup,
+    attachment_url: circularData?.attachment_url as string | null
+  });
 };
 
 export const searchCircular = async (req: Request, res: Response) => {
