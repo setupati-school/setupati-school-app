@@ -20,10 +20,14 @@ const AttendancePage = React.lazy(() =>
   import('@/components/Attendance').then((m) => ({ default: m.AttendancePage }))
 );
 const TeachersPage = React.lazy(() =>
-  import('@/components/Teachers/TeachersPage').then((m) => ({ default: m.TeachersPage }))
+  import('@/components/Teachers/TeachersPage').then((m) => ({
+    default: m.TeachersPage
+  }))
 );
 const StudentsPage = React.lazy(() =>
-  import('@/components/Students/StudentsPage').then((m) => ({ default: m.StudentsPage }))
+  import('@/components/Students/StudentsPage').then((m) => ({
+    default: m.StudentsPage
+  }))
 );
 import { Toaster } from '@/components/ui/toaster';
 import { SonnerToaster } from '@/components/ui/sonner';
@@ -37,9 +41,11 @@ import {
 } from '@/components/Authentication';
 import { useAuthStore, useSchoolStore } from '@/store';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Helmet } from "react-helmet";
+import { Helmet } from 'react-helmet';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import { getOfflineManager } from '@/lib/offline-manager';
+import OfflineIndicator from '@/components/OfflineIndicator';
 
 // ---------- Lazy-loaded layout & dashboards ----------
 const Main = React.lazy(() =>
@@ -53,16 +59,16 @@ const SignUpForm = React.lazy(() =>
   import('@/components/admin').then((m) => ({ default: m.SignUpForm }))
 );
 
-const StudentResultLookup = React.lazy(() =>
-  import('@/components/Students/StudentResultLookup')
+const StudentResultLookup = React.lazy(
+  () => import('@/components/Students/StudentResultLookup')
 );
 
-const ExamResultsPage = React.lazy(() =>
-  import('@/components/ExamResults/ExamResultsPage')
+const ExamResultsPage = React.lazy(
+  () => import('@/components/ExamResults/ExamResultsPage')
 );
 
-const StudentProfilePage = React.lazy(() =>
-  import('@/components/Students/StudentProfilePage')
+const StudentProfilePage = React.lazy(
+  () => import('@/components/Students/StudentProfilePage')
 );
 
 const ResultsRoute: React.FC = () => {
@@ -97,24 +103,27 @@ const queryClient = new QueryClient({
       // Disable refetch on reconnect for mobile (prevents unnecessary calls)
       refetchOnReconnect: false,
       // Retry logic with exponential backoff for network failures
-      retry: (failureCount, error: any) => {
+      retry: (failureCount, error: unknown) => {
         // Don't retry on 4xx errors (client errors)
-        if (error?.response?.status >= 400 && error?.response?.status < 500) {
-          return false;
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = (error as any).response;
+          if (response?.status >= 400 && response?.status < 500) {
+            return false;
+          }
         }
         // Retry up to 3 times for network errors
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       // Network mode: prefer online but allow offline cache
-      networkMode: 'online',
+      networkMode: 'online'
     },
     mutations: {
       // Retry mutations once on network failure
       retry: 1,
-      retryDelay: 1000,
-    },
-  },
+      retryDelay: 1000
+    }
+  }
 });
 
 export const router = createBrowserRouter([
@@ -237,14 +246,44 @@ const App: React.FC = () => {
   const { initCurrentUser } = useSchoolStore();
   const { t } = useTranslation();
 
+  // PWA registration with Vite PWA plugin
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    offlineReady: [offlineReady, setOfflineReady],
+    updateServiceWorker
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered: ' + r);
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error);
+    }
+  });
+
   useEffect(() => {
     const initializeApp = async () => {
       await initAuthListener();
       await initCurrentUser();
+
+      // Initialize offline functionality
+      try {
+        const offlineManager = getOfflineManager();
+        console.log('Offline functionality initialized');
+
+        // Perform initial maintenance
+        await offlineManager.performMaintenance();
+      } catch (error) {
+        console.error('Failed to initialize offline functionality:', error);
+      }
     };
 
     initializeApp();
   }, [initAuthListener, initCurrentUser]);
+
+  // Handle PWA update
+  const handlePWAUpdate = () => {
+    updateServiceWorker(true);
+  };
 
   return (
     <ErrorBoundary>
@@ -254,6 +293,43 @@ const App: React.FC = () => {
             <title>t{t('title')}</title>
           </Helmet>
           <TooltipProvider>
+            {/* PWA Update notification */}
+            {needRefresh && (
+              <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-2 text-center">
+                <span className="mr-4">New version available!</span>
+                <button
+                  onClick={handlePWAUpdate}
+                  className="bg-white text-blue-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100"
+                >
+                  Update
+                </button>
+                <button
+                  onClick={() => setNeedRefresh(false)}
+                  className="ml-2 text-blue-200 hover:text-white"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Offline ready notification */}
+            {offlineReady && (
+              <div className="fixed top-0 left-0 right-0 z-50 bg-green-600 text-white p-2 text-center">
+                <span className="mr-4">App ready to work offline!</span>
+                <button
+                  onClick={() => setOfflineReady(false)}
+                  className="text-green-200 hover:text-white"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Offline indicator - shows when offline or sync pending */}
+            <div className="fixed top-0 left-0 right-0 z-40 p-2">
+              <OfflineIndicator />
+            </div>
+
             <Toaster />
             <SonnerToaster />
             <Suspense

@@ -1,281 +1,232 @@
-#!/usr/bin/env node
-
 // PWA Foundation Verification Script
-// This script verifies that all PWA foundation components are properly set up
+// Setupati School Management System PWA
 
+const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔍 Verifying PWA Foundation Setup...\n');
+console.log(chalk.blue.bold('🔍 PWA Foundation Verification'));
+console.log(chalk.gray('Checking PWA implementation...\n'));
 
-let score = 0;
-let totalTests = 0;
+let passed = 0;
+let failed = 0;
 
-function test(name, condition, details = '') {
-  totalTests++;
-  const status = condition ? '✅' : '❌';
-  const result = condition ? 'PASS' : 'FAIL';
-  console.log(`${status} ${name}: ${result}`);
-  if (details && !condition) {
-    console.log(`   ${details}`);
-  }
-  if (condition) score++;
-  return condition;
+function checkPassed(message) {
+  console.log(chalk.green('✓'), message);
+  passed++;
 }
 
-// Test 1: Check if manifest.json exists and has required fields
-function testManifest() {
-  try {
-    const manifestPath = path.join(__dirname, '../public/manifest.json');
-    if (!fs.existsSync(manifestPath)) {
-      return test(
-        'Manifest File',
-        false,
-        'manifest.json not found in public directory'
-      );
-    }
-
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    const requiredFields = [
-      'name',
-      'short_name',
-      'start_url',
-      'display',
-      'theme_color',
-      'background_color',
-      'icons'
-    ];
-    const hasAllFields = requiredFields.every(
-      (field) => manifest[field] !== undefined
-    );
-
-    if (!hasAllFields) {
-      const missingFields = requiredFields.filter(
-        (field) => manifest[field] === undefined
-      );
-      return test(
-        'Manifest Required Fields',
-        false,
-        `Missing fields: ${missingFields.join(', ')}`
-      );
-    }
-
-    test('Manifest File', true);
-    test('Manifest Required Fields', true);
-
-    // Check icons
-    const hasRequiredIcons =
-      manifest.icons &&
-      manifest.icons.some((icon) => icon.sizes === '192x192') &&
-      manifest.icons.some((icon) => icon.sizes === '512x512');
-
-    return test(
-      'Manifest Icons',
-      hasRequiredIcons,
-      'Missing required 192x192 or 512x512 icons'
-    );
-  } catch (error) {
-    return test(
-      'Manifest File',
-      false,
-      `Error reading manifest: ${error.message}`
-    );
-  }
+function checkFailed(message) {
+  console.log(chalk.red('✗'), message);
+  failed++;
 }
 
-// Test 2: Check if service worker exists
-function testServiceWorker() {
-  const swPath = path.join(__dirname, '../public/sw.js');
-  const exists = fs.existsSync(swPath);
+function checkWarning(message) {
+  console.log(chalk.yellow('⚠'), message);
+}
 
-  if (!exists) {
-    return test(
-      'Service Worker File',
-      false,
-      'sw.js not found in public directory'
+// Check Vite PWA configuration
+console.log(chalk.cyan.bold('📦 Vite PWA Configuration'));
+try {
+  const viteConfig = fs.readFileSync(
+    path.join(__dirname, '../vite.config.ts'),
+    'utf8'
+  );
+
+  if (viteConfig.includes('VitePWA')) {
+    checkPassed('Vite PWA plugin is configured');
+  } else {
+    checkFailed('Vite PWA plugin not found in configuration');
+  }
+
+  if (viteConfig.includes('injectManifest')) {
+    checkPassed('Using injectManifest strategy for custom service worker');
+  } else {
+    checkWarning(
+      'Not using injectManifest strategy - may limit offline functionality'
     );
   }
 
-  try {
+  if (viteConfig.includes("registerType: 'prompt'")) {
+    checkPassed('PWA registration set to prompt mode');
+  } else {
+    checkWarning('PWA registration not set to prompt mode');
+  }
+} catch (error) {
+  checkFailed('Could not read vite.config.ts');
+}
+
+// Check service worker implementation
+console.log(chalk.cyan.bold('\n🔧 Service Worker Implementation'));
+try {
+  const swPath = path.join(__dirname, '../src/sw.ts');
+  if (fs.existsSync(swPath)) {
+    checkPassed('Custom service worker found at src/sw.ts');
+
     const swContent = fs.readFileSync(swPath, 'utf8');
-    const hasInstallEvent = swContent.includes("addEventListener('install'");
-    const hasActivateEvent = swContent.includes("addEventListener('activate'");
-    const hasFetchEvent = swContent.includes("addEventListener('fetch'");
 
-    test('Service Worker File', true);
-    test(
-      'Service Worker Install Event',
-      hasInstallEvent,
-      'Missing install event listener'
-    );
-    test(
-      'Service Worker Activate Event',
-      hasActivateEvent,
-      'Missing activate event listener'
-    );
-    return test(
-      'Service Worker Fetch Event',
-      hasFetchEvent,
-      'Missing fetch event listener'
-    );
-  } catch (error) {
-    return test(
-      'Service Worker File',
-      false,
-      `Error reading service worker: ${error.message}`
-    );
-  }
-}
-
-// Test 3: Check HTML file for PWA meta tags
-function testHTMLMetaTags() {
-  try {
-    const htmlPath = path.join(__dirname, '../index.html');
-    if (!fs.existsSync(htmlPath)) {
-      return test('HTML File', false, 'index.html not found');
+    if (swContent.includes('precacheAndRoute')) {
+      checkPassed('Workbox precaching implemented');
+    } else {
+      checkFailed('Workbox precaching not found');
     }
 
-    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-
-    const hasViewport =
-      htmlContent.includes('name="viewport"') &&
-      htmlContent.includes('width=device-width');
-    const hasThemeColor = htmlContent.includes('name="theme-color"');
-    const hasManifestLink = htmlContent.includes('rel="manifest"');
-    const hasAppleMeta = htmlContent.includes('apple-mobile-web-app-capable');
-
-    test('HTML File', true);
-    test(
-      'Viewport Meta Tag',
-      hasViewport,
-      'Missing or incorrect viewport meta tag'
-    );
-    test('Theme Color Meta Tag', hasThemeColor, 'Missing theme-color meta tag');
-    test('Manifest Link', hasManifestLink, 'Missing manifest link tag');
-    return test(
-      'Apple PWA Meta Tags',
-      hasAppleMeta,
-      'Missing Apple PWA meta tags'
-    );
-  } catch (error) {
-    return test(
-      'HTML File',
-      false,
-      `Error reading HTML file: ${error.message}`
-    );
-  }
-}
-
-// Test 4: Check Vite PWA configuration
-function testViteConfig() {
-  try {
-    const vitePath = path.join(__dirname, '../vite.config.ts');
-    if (!fs.existsSync(vitePath)) {
-      return test('Vite Config', false, 'vite.config.ts not found');
+    if (swContent.includes('registerRoute')) {
+      checkPassed('Custom routing strategies implemented');
+    } else {
+      checkFailed('Custom routing strategies not found');
     }
 
-    const viteContent = fs.readFileSync(vitePath, 'utf8');
-    const hasPWAPlugin = viteContent.includes('VitePWA');
-    const hasWorkboxConfig = viteContent.includes('workbox');
+    if (swContent.includes('background-sync')) {
+      checkPassed('Background sync functionality implemented');
+    } else {
+      checkFailed('Background sync functionality not found');
+    }
 
-    test('Vite Config', true);
-    test('Vite PWA Plugin', hasPWAPlugin, 'VitePWA plugin not configured');
-    return test(
-      'Workbox Configuration',
-      hasWorkboxConfig,
-      'Workbox configuration missing'
-    );
-  } catch (error) {
-    return test(
-      'Vite Config',
-      false,
-      `Error reading vite config: ${error.message}`
-    );
+    if (swContent.includes('IndexedDB')) {
+      checkPassed('IndexedDB integration found');
+    } else {
+      checkWarning('IndexedDB integration not found in service worker');
+    }
+  } else {
+    checkFailed('Custom service worker not found at src/sw.ts');
   }
+} catch (error) {
+  checkFailed('Error checking service worker implementation');
 }
 
-// Test 5: Check PWA utility files
-function testPWAUtilities() {
-  const pwaLibPath = path.join(__dirname, '../src/lib/pwa.ts');
-  const pwaTestPath = path.join(__dirname, '../src/utils/pwa-test.ts');
-  const pwaComponentPath = path.join(
+// Check offline functionality
+console.log(chalk.cyan.bold('\n💾 Offline Functionality'));
+try {
+  const offlineDbPath = path.join(__dirname, '../src/lib/offline-db.ts');
+  if (fs.existsSync(offlineDbPath)) {
+    checkPassed('Offline database implementation found');
+
+    const dbContent = fs.readFileSync(offlineDbPath, 'utf8');
+
+    if (dbContent.includes('IndexedDB')) {
+      checkPassed('IndexedDB implementation found');
+    } else {
+      checkFailed('IndexedDB implementation not found');
+    }
+
+    if (dbContent.includes('SyncQueueItem')) {
+      checkPassed('Sync queue implementation found');
+    } else {
+      checkFailed('Sync queue implementation not found');
+    }
+  } else {
+    checkFailed('Offline database implementation not found');
+  }
+
+  const syncManagerPath = path.join(__dirname, '../src/lib/sync-manager.ts');
+  if (fs.existsSync(syncManagerPath)) {
+    checkPassed('Background sync manager found');
+  } else {
+    checkFailed('Background sync manager not found');
+  }
+
+  const offlineManagerPath = path.join(
     __dirname,
-    '../src/components/PWAStatus.tsx'
+    '../src/lib/offline-manager.ts'
   );
-
-  const hasLib = fs.existsSync(pwaLibPath);
-  const hasTest = fs.existsSync(pwaTestPath);
-  const hasComponent = fs.existsSync(pwaComponentPath);
-
-  test('PWA Library', hasLib, 'PWA utility library not found');
-  test('PWA Test Utilities', hasTest, 'PWA test utilities not found');
-  return test(
-    'PWA Status Component',
-    hasComponent,
-    'PWA status component not found'
-  );
+  if (fs.existsSync(offlineManagerPath)) {
+    checkPassed('Offline manager found');
+  } else {
+    checkFailed('Offline manager not found');
+  }
+} catch (error) {
+  checkFailed('Error checking offline functionality');
 }
 
-// Test 6: Check main.tsx for PWA initialization
-function testMainTSX() {
-  try {
-    const mainPath = path.join(__dirname, '../src/main.tsx');
-    if (!fs.existsSync(mainPath)) {
-      return test('Main TSX File', false, 'main.tsx not found');
+// Check React integration
+console.log(chalk.cyan.bold('\n⚛️ React Integration'));
+try {
+  const appPath = path.join(__dirname, '../src/App.tsx');
+  if (fs.existsSync(appPath)) {
+    const appContent = fs.readFileSync(appPath, 'utf8');
+
+    if (appContent.includes('useRegisterSW')) {
+      checkPassed('Vite PWA React hook integrated');
+    } else {
+      checkFailed('Vite PWA React hook not found');
     }
 
-    const mainContent = fs.readFileSync(mainPath, 'utf8');
-    const hasPWAImport =
-      mainContent.includes('./lib/pwa') ||
-      mainContent.includes('./utils/pwa-test');
+    if (appContent.includes('getOfflineManager')) {
+      checkPassed('Offline manager integrated in App');
+    } else {
+      checkFailed('Offline manager not integrated in App');
+    }
 
-    test('Main TSX File', true);
-    return test(
-      'PWA Initialization',
-      hasPWAImport,
-      'PWA initialization not found in main.tsx'
-    );
-  } catch (error) {
-    return test(
-      'Main TSX File',
-      false,
-      `Error reading main.tsx: ${error.message}`
+    if (appContent.includes('OfflineIndicator')) {
+      checkPassed('Offline indicator component integrated');
+    } else {
+      checkWarning('Offline indicator component not found');
+    }
+  } else {
+    checkFailed('App.tsx not found');
+  }
+
+  const useOfflinePath = path.join(__dirname, '../src/hooks/useOffline.ts');
+  if (fs.existsSync(useOfflinePath)) {
+    checkPassed('useOffline hook implemented');
+  } else {
+    checkFailed('useOffline hook not found');
+  }
+} catch (error) {
+  checkFailed('Error checking React integration');
+}
+
+// Check PWA assets
+console.log(chalk.cyan.bold('\n🎨 PWA Assets'));
+try {
+  const manifestPath = path.join(__dirname, '../public/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    checkWarning(
+      'Static manifest.json found - will be overridden by Vite PWA plugin'
     );
   }
+
+  const iconPath = path.join(__dirname, '../public/school.png');
+  if (fs.existsSync(iconPath)) {
+    checkPassed('PWA icon found at public/school.png');
+  } else {
+    checkFailed('PWA icon not found at public/school.png');
+  }
+
+  // Check if old service worker exists
+  const oldSwPath = path.join(__dirname, '../public/sw.js');
+  if (fs.existsSync(oldSwPath)) {
+    checkWarning(
+      'Old service worker found at public/sw.js - should be removed'
+    );
+  } else {
+    checkPassed('No conflicting service worker in public directory');
+  }
+} catch (error) {
+  checkFailed('Error checking PWA assets');
 }
 
-// Run all tests
-console.log('Running PWA Foundation Tests:\n');
+// Summary
+console.log(chalk.cyan.bold('\n📊 Summary'));
+console.log(chalk.green(`✓ Passed: ${passed}`));
+console.log(chalk.red(`✗ Failed: ${failed}`));
 
-testManifest();
-testServiceWorker();
-testHTMLMetaTags();
-testViteConfig();
-testPWAUtilities();
-testMainTSX();
-
-// Calculate and display results
-const percentage = Math.round((score / totalTests) * 100);
-
-console.log('\n' + '='.repeat(50));
-console.log(
-  `📊 PWA Foundation Score: ${percentage}% (${score}/${totalTests} tests passed)`
-);
-
-if (percentage === 100) {
-  console.log('🎉 Excellent! PWA Foundation setup is complete!');
-} else if (percentage >= 80) {
-  console.log('✅ Good! PWA Foundation is mostly ready with minor issues.');
-} else if (percentage >= 60) {
-  console.log('⚠️  Fair. PWA Foundation needs some improvements.');
+if (failed === 0) {
+  console.log(chalk.green.bold('\n🎉 PWA foundation is properly implemented!'));
+  console.log(chalk.gray('Next steps:'));
+  console.log(
+    chalk.gray('1. Run `npm run build` to test the production build')
+  );
+  console.log(chalk.gray('2. Run `npm run preview` to test the PWA locally'));
+  console.log(chalk.gray('3. Use Lighthouse to audit PWA compliance'));
 } else {
-  console.log('❌ Poor. PWA Foundation needs significant work.');
+  console.log(
+    chalk.red.bold('\n❌ PWA foundation has issues that need to be addressed.')
+  );
+  console.log(chalk.gray('Please fix the failed checks above.'));
 }
 
-console.log('\nNext Steps:');
-console.log('1. Run "npm run dev" to test PWA in development');
-console.log('2. Run "npm run build" to create production PWA');
-console.log('3. Test PWA installation in Chrome DevTools');
-console.log('4. Run Lighthouse audit to verify 100% PWA score');
+console.log(chalk.gray('\n' + '='.repeat(50)));
 
-process.exit(percentage === 100 ? 0 : 1);
+process.exit(failed > 0 ? 1 : 0);
