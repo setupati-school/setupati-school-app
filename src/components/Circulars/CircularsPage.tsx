@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import api from '@/lib/axiosConfig';
+import { useCirculars } from '@/hooks/useCirculars';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,6 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import { firebaseErrorParser } from '@/lib/firebaseErrorParser';
-import { useSchoolStore } from '@/store/schoolStore';
 import { useAuthStore } from '@/store/authStore';
 import { Circular } from '@/types/schoolStoreType';
 import { useToast } from '@/hooks/use-toast';
@@ -48,12 +48,13 @@ type FilterStatus = 'all' | 'active' | 'expired';
 
 export const CircularsPage: React.FC = () => {
   const { toast } = useToast();
-  const { circulars, setCirculars } = useSchoolStore();
   const { role } = useAuthStore();
 
   const isAdmin = role === 'admin';
 
-  const [loading, setLoading] = useState(true);
+  // SWR hook for fetching circulars with caching and revalidation
+  const { circulars, isLoading: loading, isValidating, mutate } = useCirculars();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGroup, setFilterGroup] = useState<FilterGroup>('all');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
@@ -70,28 +71,6 @@ export const CircularsPage: React.FC = () => {
     null
   );
   const [deleting, setDeleting] = useState(false);
-
-  // Fetch all circulars using api
-  const fetchCirculars = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/circulars/all');
-
-      // Handle response format
-      const data = response?.data?.circulars || response?.data || [];
-      setCirculars(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error fetching circulars:', error);
-      setCirculars([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCirculars();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const filteredCirculars = useMemo(() => {
     return circulars
@@ -171,8 +150,8 @@ export const CircularsPage: React.FC = () => {
         description: 'Circular deleted successfully'
       });
 
-      // Refresh the list
-      fetchCirculars();
+      // Revalidate the cache to refresh the list
+      mutate();
     } catch (error: any) {
       const { message } = firebaseErrorParser(error);
       toast({
@@ -188,7 +167,7 @@ export const CircularsPage: React.FC = () => {
 
   const handleCreateSuccess = () => {
     setEditingCircular(null);
-    fetchCirculars();
+    mutate();
   };
 
   const handleCreateModalClose = (open: boolean) => {
@@ -215,10 +194,10 @@ export const CircularsPage: React.FC = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={fetchCirculars}
-            disabled={loading}
+            onClick={() => mutate()}
+            disabled={loading || isValidating}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
           </Button>
           {isAdmin && (
             <Button onClick={() => setCreateModalOpen(true)}>
