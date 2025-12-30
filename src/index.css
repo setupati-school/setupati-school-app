@@ -1,10 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @config "../tailwind.config.ts";
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
-
 
 body {
   top: 0 !important;
@@ -16,15 +15,16 @@ body .skiptranslate {
 }
 
 /* Specific font when the language is set to Tamil */
-[lang="ta"], 
+[lang='ta'],
 :lang(ta) {
-  font-family: "Google Sans", sans-serif !important;
+  font-family: 'Google Sans', sans-serif !important;
   font-weight: 400;
 }
 
 /* Targeting Google Translate specific injections */
-.goog-te-combo, .goog-te-menu-value span {
-  font-family: "Google Sans", sans-seriff !important;
+.goog-te-combo,
+.goog-te-menu-value span {
+  font-family: 'Google Sans', sans-seriff !important;
 }
 
 @layer base {
@@ -74,9 +74,17 @@ body .skiptranslate {
     --warning-soft: 38 40% 95%;
 
     /* Educational gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(213 84% 35%));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-strong)), hsl(25 85% 65%));
-    
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(213 84% 35%)
+    );
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(var(--accent-strong)),
+      hsl(25 85% 65%)
+    );
+
     /* Shadows */
     --shadow-soft: 0 2px 10px -5px hsl(213 84% 28% / 0.1);
     --shadow-elevation: 0 8px 30px -10px hsl(213 84% 28% / 0.15);
@@ -140,8 +148,16 @@ body .skiptranslate {
     --warning-foreground: 0 0% 98%;
     --warning-soft: 38 25% 15%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(213 84% 70%));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-strong)), hsl(25 75% 55%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(213 84% 70%)
+    );
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(var(--accent-strong)),
+      hsl(25 75% 55%)
+    );
 
     --shadow-soft: 0 2px 10px -5px hsl(0 0% 0% / 0.2);
     --shadow-elevation: 0 8px 30px -10px hsl(0 0% 0% / 0.3);
@@ -154,10 +170,9 @@ body .skiptranslate {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-    html {
+  html {
     --test-primary: hsl(var(--primary));
   }
-
 }
 
 @layer base {
@@ -168,5 +183,139 @@ body .skiptranslate {
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+}
+
+/* PWA Offline Styles */
+.offline {
+  filter: grayscale(0.5);
+}
+
+.offline::before {
+  content: 'You are currently offline';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #f59e0b;
+  color: white;
+  text-align: center;
+  padding: 0.5rem;
+  z-index: 9999;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Mobile-First Touch Target Utilities */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-target-lg {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Mobile-first spacing utilities */
+  .mobile-padding {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+
+  .mobile-margin {
+    @apply m-3 sm:m-4 md:m-6;
+  }
+
+  /* Mobile-first text sizing */
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-heading {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  /* Mobile-first button spacing */
+  .mobile-button-group {
+    @apply space-x-2 sm:space-x-3 md:space-x-4;
+  }
+
+  .mobile-button-group-vertical {
+    @apply space-y-2 sm:space-y-3 md:space-y-4;
+  }
+}
+
+/* PWA Install Button Styles */
+.pwa-install-button {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: #1e40af;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: all 0.2s ease;
+  min-height: 44px; /* Ensure touch target */
+  min-width: 44px;
+}
+
+.pwa-install-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15);
+}
+
+.pwa-install-button:active {
+  transform: translateY(0);
+}
+
+/* PWA Update Available Notification */
+.pwa-update-notification {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: #059669;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  max-width: 300px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* PWA Splash Screen Styles */
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* iOS PWA Status Bar */
+@supports (-webkit-touch-callout: none) {
+  .ios-pwa-padding {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 }

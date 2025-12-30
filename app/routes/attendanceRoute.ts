@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import type attendance from '@setupati-school/setupati-types/models';
+import { Attendance } from '@setupati-school/setupati-types/models';
 import {
   createAttendance,
   deleteAttendanceDetails,
@@ -10,9 +10,10 @@ import {
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 import { isAuthorized } from '../middlewares/isAuthorized.js';
 import { validateBody } from '../middlewares/validateRequest.js';
-import { createAttendanceSchema, updateAttendanceSchema } from '../zod/attendanceSchema.js';
-
-type Attendance = typeof attendance;
+import {
+  createAttendanceSchema,
+  updateAttendanceSchema
+} from '../zod/attendanceSchema.js';
 
 const attendanceRouter = Router();
 
@@ -21,7 +22,7 @@ attendanceRouter.post(
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createAttendanceSchema),
-  (req: Request<{ Attendance: Attendance }>, res: Response) => {
+  (req: Request, res: Response) => {
     createAttendance(req, res);
   }
 );
@@ -52,10 +53,7 @@ attendanceRouter.put(
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateAttendanceSchema),
-  (
-    req: Request<{ attendance_id: string; Attendance: Partial<Attendance> }>,
-    res: Response
-  ) => {
+  (req: Request<{ attendance_id: string }>, res: Response) => {
     updateAttendanceDetails(req, res);
   }
 );
