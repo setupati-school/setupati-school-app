@@ -258,7 +258,7 @@ async function performOfflineDataSync() {
 // Open IndexedDB connection
 function openOfflineDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('setupati-school-offline', 1);
+    const request = indexedDB.open('setupati-school-offline', 2);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -458,7 +458,7 @@ function markItemAsSynced(
     getRequest.onsuccess = () => {
       const item = getRequest.result;
       if (item) {
-        item.synced = true;
+        item.synced = 1; // 1 = true for IndexedDB compatibility
         const putRequest = store.put(item);
         putRequest.onsuccess = () => resolve();
         putRequest.onerror = () => reject(putRequest.error);

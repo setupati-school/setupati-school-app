@@ -29,6 +29,7 @@ import { useSchoolStore } from '@/store/schoolStore';
 import api from '@/lib/axiosConfig';
 import { User as UserData } from '@/types';
 import { loginSchema } from '@/components/zod';
+import { refreshAuthState } from '@/lib/auth-utils';
 
 interface LoginFormProps {
   toggleCurrentView: (view: 'login' | 'forgot' | 'reset') => void;
@@ -76,6 +77,12 @@ const LoginFormComponent: React.FC<LoginFormProps> = ({
       if (!user) {
         throw new Error('User not found.');
       }
+
+      // Refresh auth state to ensure axios interceptor works
+      refreshAuthState();
+
+      // Small delay to ensure auth state is updated
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const response = await api.get(`/api/v1/auth/users/${user.uid}`);
       const userData: UserData = response.data.user;

@@ -195,7 +195,7 @@ export class OfflineManager {
 
   async updateAttendanceOffline(attendance: AttendanceRecord): Promise<void> {
     attendance.lastModified = Date.now();
-    attendance.synced = false;
+    attendance.synced = 0; // 0 = false for IndexedDB compatibility
 
     await this.offlineDB.put('attendance', attendance);
 

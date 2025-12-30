@@ -12,7 +12,10 @@
     "test": "vitest",
     "build:backend": "tsc --project tsconfig.json",
     "start:backend": "node dist/index.js",
-    "dev:backend": "node --no-warnings=ExperimentalWarning --loader ts-node/esm app/index.ts"
+    "dev:backend": "node --no-warnings=ExperimentalWarning --loader ts-node/esm app/index.ts",
+    "seed": "node scripts/seed.js",
+    "seed:ts": "tsx scripts/seed-database.ts",
+    "diagnose": "node scripts/diagnose.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
-import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,14 +12,6 @@ export default defineConfig({
       // Optimize JSX runtime for production
       jsxRuntime: 'automatic'
     }),
-    // Bundle analyzer for development
-    process.env.ANALYZE &&
-      visualizer({
-        filename: 'dist/stats.html',
-        open: true,
-        gzipSize: true,
-        brotliSize: true
-      }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'school.png'],
@@ -28,6 +19,10 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectRegister: 'auto',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        maximumFileSizeToCacheInBytes: 10000000
+      },
       manifest: {
         name: 'Setupati School Management System',
         short_name: 'Setupati School',
@@ -110,7 +105,8 @@ export default defineConfig({
       },
       devOptions: {
         enabled: true,
-        type: 'module'
+        type: 'module',
+        navigateFallback: 'index.html'
       }
     })
   ],
@@ -187,6 +183,10 @@ export default defineConfig({
   // Server configuration
   server: {
     host: true,
-    port: 5173
+    port: 5173,
+    headers: {
+      'Service-Worker-Allowed': '/'
+    },
+    middlewareMode: false
   }
 });

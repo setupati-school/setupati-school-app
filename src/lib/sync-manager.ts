@@ -283,22 +283,22 @@ export class BackgroundSyncManager {
       if (item.endpoint.includes('/attendance') && responseData.id) {
         const localData = item.data as AttendanceRecord;
         localData.id = responseData.id;
-        localData.synced = true;
+        localData.synced = 1; // 1 = true for IndexedDB compatibility
         await this.offlineDB.put('attendance', localData);
       } else if (item.endpoint.includes('/timetable') && responseData.id) {
         const localData = item.data as TimetableRecord;
         localData.id = responseData.id;
-        localData.synced = true;
+        localData.synced = 1; // 1 = true for IndexedDB compatibility
         await this.offlineDB.put('timetables', localData);
       } else if (item.endpoint.includes('/examresult') && responseData.id) {
         const localData = item.data as ExamResultRecord;
         localData.id = responseData.id;
-        localData.synced = true;
+        localData.synced = 1; // 1 = true for IndexedDB compatibility
         await this.offlineDB.put('results', localData);
       } else if (item.endpoint.includes('/circular') && responseData.id) {
         const localData = item.data as CircularRecord;
         localData.id = responseData.id;
-        localData.synced = true;
+        localData.synced = 1; // 1 = true for IndexedDB compatibility
         await this.offlineDB.put('circulars', localData);
       }
     } catch (error) {

@@ -274,6 +274,19 @@ const App: React.FC = () => {
 
         // Perform initial maintenance
         await offlineManager.performMaintenance();
+
+        // Run IndexedDB validation in development
+        if (import.meta.env.DEV) {
+          const { validateOfflineDB } = await import(
+            './lib/offline-db-validator'
+          );
+          // Initialize auth debug utilities
+          await import('./lib/auth-debug-utils');
+
+          setTimeout(() => {
+            validateOfflineDB().catch(console.error);
+          }, 2000); // Wait 2 seconds for app to fully initialize
+        }
       } catch (error) {
         console.error('Failed to initialize offline functionality:', error);
       }

@@ -133,10 +133,37 @@ async function testOfflineCapability(): Promise<boolean> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration || !registration.active) return false;
 
-    // Test if service worker can handle fetch events
-    const cache = await caches.open('setupati-static-v1');
-    const cachedResponse = await cache.match('/');
-    return cachedResponse !== undefined;
+    // Test if service worker can handle fetch events by checking for any cached content
+    const cacheNames = await caches.keys();
+
+    // Look for any of our expected cache names
+    const expectedCachePatterns = [
+      'setupati-school-static',
+      'setupati-school-dynamic',
+      'workbox-precache',
+      'google-fonts'
+    ];
+
+    const hasRelevantCache = cacheNames.some((cacheName) =>
+      expectedCachePatterns.some((pattern) => cacheName.includes(pattern))
+    );
+
+    if (!hasRelevantCache) return false;
+
+    // Try to find any cached content
+    for (const cacheName of cacheNames) {
+      try {
+        const cache = await caches.open(cacheName);
+        const keys = await cache.keys();
+        if (keys.length > 0) {
+          return true; // Found cached content
+        }
+      } catch (error) {
+        continue; // Try next cache
+      }
+    }
+
+    return false;
   } catch {
     return false;
   }

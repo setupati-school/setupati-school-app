@@ -27,7 +27,7 @@ export interface AttendanceRecord {
   date: string;
   status: 'present' | 'absent' | 'late';
   subject: string;
-  synced: boolean;
+  synced: number; // 0 = false, 1 = true (for IndexedDB compatibility)
   lastModified: number;
 }
 
@@ -37,7 +37,7 @@ export interface TimetableRecord {
   day: string;
   periods: TimetablePeriod[];
   lastUpdated: number;
-  synced: boolean;
+  synced: number; // 0 = false, 1 = true (for IndexedDB compatibility)
 }
 
 export interface TimetablePeriod {
@@ -58,7 +58,7 @@ export interface ExamResultRecord {
   maxMarks: number;
   grade: string;
   lastUpdated: number;
-  synced: boolean;
+  synced: number; // 0 = false, 1 = true (for IndexedDB compatibility)
 }
 
 export interface CircularRecord {
@@ -70,7 +70,7 @@ export interface CircularRecord {
   targetAudience: string[];
   attachments?: string[];
   lastUpdated: number;
-  synced: boolean;
+  synced: number; // 0 = false, 1 = true (for IndexedDB compatibility)
 }
 
 export interface UserProfile {
@@ -81,12 +81,12 @@ export interface UserProfile {
   classId?: string;
   studentIds?: string[]; // For parents
   lastUpdated: number;
-  synced: boolean;
+  synced: number; // 0 = false, 1 = true (for IndexedDB compatibility)
 }
 
 // IndexedDB Configuration
 const DB_NAME = 'setupati-school-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented to update schema for synced field type change
 
 export class OfflineDBManager {
   private db: IDBDatabase | null = null;
@@ -266,19 +266,52 @@ export class OfflineDBManager {
     const db = await this.getDB();
     const transaction = db.transaction([storeName], 'readonly');
     const store = transaction.objectStore(storeName);
-    const index = store.index(indexName);
 
     return new Promise((resolve, reject) => {
-      const request = index.getAll(value);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      try {
+        // Check if the index exists
+        if (!store.indexNames.contains(indexName)) {
+          console.warn(
+            `OfflineDB: Index '${indexName}' does not exist in store '${storeName}'`
+          );
+          resolve([]);
+          return;
+        }
+
+        const index = store.index(indexName);
+
+        // Validate the value parameter
+        if (value === undefined || value === null) {
+          console.warn(
+            `OfflineDB: Invalid key value for index '${indexName}': ${value}`
+          );
+          resolve([]);
+          return;
+        }
+
+        const request = index.getAll(value);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => {
+          console.error(
+            `OfflineDB: Error querying index '${indexName}' with value '${value}':`,
+            request.error
+          );
+          reject(request.error);
+        };
+      } catch (error) {
+        console.error(
+          `OfflineDB: Exception in getByIndex for '${storeName}.${indexName}':`,
+          error
+        );
+        resolve([]);
+      }
     });
   }
 
   // Attendance-specific methods
   async saveAttendance(attendance: AttendanceRecord): Promise<void> {
     attendance.lastModified = Date.now();
-    attendance.synced = false;
+    attendance.synced = 0; // 0 = false for IndexedDB compatibility
     await this.put('attendance', attendance);
   }
 
@@ -295,13 +328,13 @@ export class OfflineDBManager {
   }
 
   async getUnsyncedAttendance(): Promise<AttendanceRecord[]> {
-    return this.getByIndex<AttendanceRecord>('attendance', 'synced', false);
+    return this.getByIndex<AttendanceRecord>('attendance', 'synced', 0);
   }
 
   // Timetable-specific methods
   async saveTimetable(timetable: TimetableRecord): Promise<void> {
     timetable.lastUpdated = Date.now();
-    timetable.synced = false;
+    timetable.synced = 0; // 0 = false for IndexedDB compatibility
     await this.put('timetables', timetable);
   }
 
@@ -314,13 +347,13 @@ export class OfflineDBManager {
   }
 
   async getUnsyncedTimetables(): Promise<TimetableRecord[]> {
-    return this.getByIndex<TimetableRecord>('timetables', 'synced', false);
+    return this.getByIndex<TimetableRecord>('timetables', 'synced', 0);
   }
 
   // Exam results-specific methods
   async saveExamResult(result: ExamResultRecord): Promise<void> {
     result.lastUpdated = Date.now();
-    result.synced = false;
+    result.synced = 0; // 0 = false for IndexedDB compatibility
     await this.put('results', result);
   }
 
@@ -333,13 +366,13 @@ export class OfflineDBManager {
   }
 
   async getUnsyncedResults(): Promise<ExamResultRecord[]> {
-    return this.getByIndex<ExamResultRecord>('results', 'synced', false);
+    return this.getByIndex<ExamResultRecord>('results', 'synced', 0);
   }
 
   // Circulars-specific methods
   async saveCircular(circular: CircularRecord): Promise<void> {
     circular.lastUpdated = Date.now();
-    circular.synced = false;
+    circular.synced = 0; // 0 = false for IndexedDB compatibility
     await this.put('circulars', circular);
   }
 
@@ -350,13 +383,13 @@ export class OfflineDBManager {
   }
 
   async getUnsyncedCirculars(): Promise<CircularRecord[]> {
-    return this.getByIndex<CircularRecord>('circulars', 'synced', false);
+    return this.getByIndex<CircularRecord>('circulars', 'synced', 0);
   }
 
   // User profile methods
   async saveUserProfile(profile: UserProfile): Promise<void> {
     profile.lastUpdated = Date.now();
-    profile.synced = false;
+    profile.synced = 0; // 0 = false for IndexedDB compatibility
     await this.put('userProfile', profile);
   }
 
@@ -365,7 +398,7 @@ export class OfflineDBManager {
   }
 
   async getUnsyncedProfiles(): Promise<UserProfile[]> {
-    return this.getByIndex<UserProfile>('userProfile', 'synced', false);
+    return this.getByIndex<UserProfile>('userProfile', 'synced', 0);
   }
 
   // Sync queue methods
@@ -412,7 +445,7 @@ export class OfflineDBManager {
   async markAsSynced(storeName: string, id: string): Promise<void> {
     const item = await this.get(storeName, id);
     if (item && typeof item === 'object') {
-      (item as any).synced = true;
+      (item as any).synced = 1; // 1 = true for IndexedDB compatibility
       await this.put(storeName, item);
     }
   }
@@ -445,7 +478,7 @@ export class OfflineDBManager {
         getRequest.onsuccess = () => {
           const item = getRequest.result;
           if (item) {
-            item.synced = true;
+            item.synced = 1; // 1 = true for IndexedDB compatibility
             const putRequest = store.put(item);
             putRequest.onsuccess = () => resolve();
             putRequest.onerror = () => reject(putRequest.error);
