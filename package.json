@@ -105,6 +105,7 @@
     "jsdom": "^26.1.0",
     "nodemon": "^3.1.10",
     "postcss": "^8.4.47",
+    "rollup-plugin-visualizer": "^6.0.5",
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.2",

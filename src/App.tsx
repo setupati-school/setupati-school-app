@@ -46,6 +46,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { getOfflineManager } from '@/lib/offline-manager';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import { resourceHints } from '@/lib/resource-hints';
+import { performanceBudget } from '@/lib/performance-budget';
 
 // ---------- Lazy-loaded layout & dashboards ----------
 const Main = React.lazy(() =>

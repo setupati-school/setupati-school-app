@@ -2,11 +2,25 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      // Enable React Fast Refresh for better development experience
+      fastRefresh: true,
+      // Optimize JSX runtime for production
+      jsxRuntime: 'automatic'
+    }),
+    // Bundle analyzer for development
+    process.env.ANALYZE &&
+      visualizer({
+        filename: 'dist/stats.html',
+        open: true,
+        gzipSize: true,
+        brotliSize: true
+      }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'school.png'],
@@ -107,39 +121,70 @@ export default defineConfig({
     }
   },
   build: {
-    // Optimize chunk splitting for better caching
+    // Simplified chunk splitting for better performance
     rollupOptions: {
       output: {
+        // Simplified manual chunking
         manualChunks: {
-          // Vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Core React libraries
+          'react-vendor': ['react', 'react-dom'],
+          'react-router': ['react-router-dom'],
+
+          // UI libraries
           'ui-vendor': [
             '@radix-ui/react-dialog',
+            '@radix-ui/react-popover',
             '@radix-ui/react-dropdown-menu',
             '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast'
+            'lucide-react'
           ],
-          'query-vendor': ['@tanstack/react-query'],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'chart-vendor': ['recharts'],
+
+          // Data management
+          'data-vendor': ['@tanstack/react-query', 'zustand', 'axios'],
+
+          // Forms
+          'forms-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+
+          // Firebase
           'firebase-vendor': ['firebase'],
-          'i18n-vendor': ['react-i18next', 'i18next']
+
+          // Charts and large libraries
+          'charts-vendor': ['recharts'],
+          'utils-vendor': [
+            'date-fns',
+            'clsx',
+            'class-variance-authority',
+            'tailwind-merge'
+          ]
         }
       }
     },
-    // Enable minification
+
+    // Reasonable performance settings
+    chunkSizeWarningLimit: 500,
+    sourcemap: false, // Disable source maps for faster builds
     minify: 'terser',
-    // Chunk size warning limit
-    chunkSizeWarningLimit: 1000,
-    // Source maps for production (can be disabled for smaller builds)
-    sourcemap: false
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production',
+        drop_debugger: true
+      }
+    }
   },
+
   // Optimize dependencies
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query']
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'zustand',
+      'axios'
+    ]
   },
-  // HTTPS configuration for PWA development
+
+  // Server configuration
   server: {
     host: true,
     port: 5173
