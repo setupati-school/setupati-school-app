@@ -19,6 +19,7 @@ import parentRouter from './routes/parentRoute.js';
 import examResultRouter from './routes/examresultRoute.js';
 import examTimeTableRouter from './routes/examTimeTableRoute.js';
 import sectionRouter from './routes/sectionRoute.js';
+import eventBlogRouter from './routes/eventBlogRoute.js';
 import axios from 'axios';
 import {
   generalLimiter,
@@ -76,6 +77,7 @@ app.use('/examresults', examResultRouter);
 app.use('/exam-timetables', examTimeTableRouter);
 app.use('/subjects', subjectRouter);
 app.use('/sections', sectionRouter);
+app.use('/event-blogs', eventBlogRouter);
 
 app.get('/alive', (req, res) => {
   res.status(200).send('OK Backend alive');

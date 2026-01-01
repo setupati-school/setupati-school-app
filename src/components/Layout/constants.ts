@@ -8,7 +8,8 @@ import {
   ClipboardCheck,
   Settings,
   UserRoundPlus,
-  Award
+  Award,
+  Newspaper
 } from 'lucide-react';
 
 export const TeacherNavigationItems = [
@@ -47,6 +48,12 @@ export const TeacherNavigationItems = [
     label: 'Circulars',
     icon: FileText,
     to: '/circulars'
+  },
+  {
+    id: 'event-blogs',
+    label: 'Event Blogs',
+    icon: Newspaper,
+    to: '/event-blogs'
   },
   {
     id: 'results',
@@ -143,6 +150,12 @@ export const AdminNavigationItems = [
     label: 'Circulars',
     icon: FileText,
     to: '/circulars'
+  },
+  {
+    id: 'event-blogs',
+    label: 'Event Blogs',
+    icon: Newspaper,
+    to: '/event-blogs'
   },
   {
     id: 'results',

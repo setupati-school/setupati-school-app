@@ -10,6 +10,9 @@ import { DashboardRoute } from '@/components/Dashboard';
 const CircularsPage = React.lazy(() =>
   import('@/components/Circulars').then((m) => ({ default: m.CircularsPage }))
 );
+const EventBlogsPage = React.lazy(() =>
+  import('@/components/EventBlogs').then((m) => ({ default: m.EventBlogsPage }))
+);
 const SubjectsPage = React.lazy(() =>
   import('@/components/Subject').then((m) => ({ default: m.SubjectsPage }))
 );
@@ -210,6 +213,16 @@ export const router = createBrowserRouter([
           <Suspense fallback={<LoadingSpinner />}>
             <CircularsPage />
           </Suspense>
+        )
+      },
+      {
+        path: '/event-blogs',
+        element: (
+          <RoleRoute allowedRoles={['admin', 'teacher']}>
+            <Suspense fallback={<LoadingSpinner />}>
+              <EventBlogsPage />
+            </Suspense>
+          </RoleRoute>
         )
       },
       {

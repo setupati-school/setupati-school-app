@@ -143,3 +143,21 @@ export const resetPasswordSchema = z
       required_error: 'Please select an exam type'
     })
   });
+
+  export const eventBlogSchema = z.object({
+    title: z
+      .string()
+      .min(1, 'Title is required')
+      .max(200, 'Title must be less than 200 characters'),
+    content: z
+      .string()
+      .min(1, 'Content is required')
+      .max(10000, 'Content must be less than 10000 characters'),
+    category: z.enum(['Sports', 'Academic', 'Cultural', 'Ceremony', 'Community', 'Other'], {
+      required_error: 'Please select a category'
+    }),
+    event_date: z.string().min(1, 'Event date is required'),
+    author_name: z.string().min(1, 'Author name is required'),
+    images: z.array(z.string().url('Invalid image URL')).optional().default([]),
+    is_published: z.boolean().optional().default(true)
+  });

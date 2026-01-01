@@ -110,6 +110,22 @@ export interface Circular {
   updated_at: string;
 }
 
+export type EventCategory = 'Sports' | 'Academic' | 'Cultural' | 'Ceremony' | 'Community' | 'Other';
+
+export interface EventBlog {
+  id: string;
+  title: string;
+  content: string;
+  category: EventCategory;
+  event_date: string;
+  author_name: string;
+  author_id?: string;
+  images: string[];
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Homework {
   id: string;
   section_id: string;
