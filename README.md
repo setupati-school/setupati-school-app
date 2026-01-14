@@ -5,7 +5,7 @@
 - [ ] Upcoming Events
 - [ ] Student Section
 - [x] Timetable (Offline support)
-- [ ] Homework
+- [x] Homework
 - [x] Exam Results
 - [x] Attendance
 - [ ] Parent Section
@@ -16,7 +16,7 @@
 
 ---
 ## Teacher Section
-- [ ] Upload Homework
+- [x] Add Homework
 - [ ] Mark Attendance
 - [ ] View Student Info
 - [ ] Gallery

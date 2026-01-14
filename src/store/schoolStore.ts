@@ -16,6 +16,7 @@ export const useSchoolStore = create<SchoolStore>()(
     persist(
       (set, get) => ({
         // state
+        // TODO: Add all types to the initial state objects to infer in other places.
         currentUser: null,
         teachers: [],
         students: [],
@@ -363,4 +364,36 @@ export const initializeSampleData = () => {
   ];
 
   store.setExams(groupedExamResults);
+
+  store.setHomework([
+    {
+      id: 'hw_001',
+      title: 'Algebra Equations Practice',
+      description: 'Solve the following equations:\n1. 2x + 5 = 13\n2. 3(x - 2) = 9\n3. x/2 + 4 = 10\n\nShow all working steps.',
+      subject_id: 'SUBJ-MATH',
+      assigned_by: 'John Doe',
+      due_date: '2025-11-20T23:59:59Z',
+      created_at: '2025-11-16T10:30:00Z',
+    },
+    {
+      id: 'hw_002',
+      title: 'Essay: The Industrial Revolution',
+      description:
+        'Write a 500-word essay on the impact of the Industrial Revolution on society. Include:\n- Economic changes\n- Social changes\n- Technological innovations\n- Environmental impact\n\nDue by end of week.',
+      subject_id: 'SUBJ-HIST',
+      assigned_by: 'Sarah Johnson',
+      due_date: '2025-11-22T23:59:59Z',
+      created_at: '2025-11-16T14:15:00Z',
+    },
+    {
+      id: 'hw_003',
+      title: 'English Grammar: Tenses',
+      description:
+        'Complete the grammar exercises on verb tenses:\n- Present Simple\n- Past Simple\n- Future Simple\n- Present Continuous\n\nComplete all 40 questions.',
+      subject_id: 'SUBJ-ENG',
+      assigned_by: 'Mike Wilson',
+      due_date: '2025-11-19T23:59:59Z',
+      created_at: '2025-11-15T09:00:00Z',
+    }
+  ]);
 };
