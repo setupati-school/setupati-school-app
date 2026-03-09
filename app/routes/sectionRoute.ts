@@ -1,49 +1,39 @@
+import { Router } from 'express';
 import {
   createSection,
-  searchSection,
-  deleteSectionDetails,
-  getAllSections,
-  updateSectionDetails
+  getSection,
+  getAllSectionsHandler,
+  updateSectionHandler,
+  deleteSectionHandler
 } from '../service/section/section.js';
-import { Router, Request, Response } from 'express';
-import type section from '@setupati-school/setupati-types/models';
-type Section = typeof section;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const sectionRouter = Router();
 
 sectionRouter.post(
   '/create',
-  (req: Request<{ Section: Section }>, res: Response) => {
-    createSection(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => createSection(req, res)
 );
 
-sectionRouter.get(
-  '/search/:section_id',
-  (req: Request<{ section_id: string }>, res: Response) => {
-    searchSection(req, res);
-  }
+sectionRouter.get('/all', isAuthenticated, (req, res) => getAllSectionsHandler(req, res));
+
+sectionRouter.get('/:section_id', isAuthenticated, (req, res) => getSection(req, res));
+
+sectionRouter.put(
+  '/:section_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => updateSectionHandler(req, res)
 );
 
 sectionRouter.delete(
-  '/delete/:section_id',
-  (req: Request<{ section_id: string }>, res: Response) => {
-    deleteSectionDetails(req, res);
-  }
-);
-
-sectionRouter.get('/all', (req: Request, res: Response) => {
-  return getAllSections(req, res);
-});
-
-sectionRouter.put(
-  '/update/:section_id',
-  (
-    req: Request<{ section_id: string; Section: Partial<Section> }>,
-    res: Response
-  ) => {
-    updateSectionDetails(req, res);
-  }
+  '/:section_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteSectionHandler(req, res)
 );
 
 export default sectionRouter;

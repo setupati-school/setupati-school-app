@@ -1,15 +1,13 @@
+import { Router } from 'express';
 import {
   createTeacher,
-  searchTeacher,
-  deleteTeacherDetails,
-  getAllTeachers,
-  updateTeacherDetails
+  getTeacher,
+  getAllTeachersHandler,
+  updateTeacherHandler,
+  deleteTeacherHandler
 } from '../service/teacher/teacher.js';
-import { Router } from 'express';
-import { updateCircularSchema } from '../zod/circularSchema.js';
-import { validateBody } from '../middlewares/validateRequest.js';
-import { isAuthorized } from '../middlewares/isAuthorized.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const teacherRouter = Router();
 
@@ -17,43 +15,25 @@ teacherRouter.post(
   '/create',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
-  validateBody(updateCircularSchema),
-  (req, res) => {
-    createTeacher(req, res);
-  }
+  (req, res) => createTeacher(req, res)
 );
 
-teacherRouter.get(
-  '/search/:teacher_id',
+teacherRouter.get('/all', isAuthenticated, (req, res) => getAllTeachersHandler(req, res));
+
+teacherRouter.get('/:teacher_id', isAuthenticated, (req, res) => getTeacher(req, res));
+
+teacherRouter.put(
+  '/:teacher_id',
   isAuthenticated,
-  (req, res) => {
-    searchTeacher(req, res);
-  }
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => updateTeacherHandler(req, res)
 );
 
 teacherRouter.delete(
-  '/delete/:teacher_id',
+  '/:teacher_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
-  (req, res) => {
-    deleteTeacherDetails(req, res);
-  }
-);
-
-teacherRouter.get('/all', 
-  isAuthenticated,
-  (req, res) => {
-  return getAllTeachers(req, res);
-});
-
-teacherRouter.put(
-  '/update/:teacher_id',
-  isAuthenticated,
-  isAuthorized({ hasRole: ['admin'] }),
-  validateBody(updateCircularSchema),
-  (req,res)=> {
-    updateTeacherDetails(req, res);
-  }
+  (req, res) => deleteTeacherHandler(req, res)
 );
 
 export default teacherRouter;

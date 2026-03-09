@@ -1,94 +1,71 @@
 import { Request, Response } from 'express';
 import {
+  getAllSections,
+  getSectionById,
   addSection,
-  deleteSection,
-  getAllSectionDetails,
-  searchSection as searchSectionApi,
-  updateSection
+  updateSection,
+  deleteSection
 } from '../../api/section/section.js';
-import type section from '@setupati-school/setupati-types/models';
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
 import logger from '../../utils/logger.js';
-type Section = typeof section;
 
-export const createSection = async (
-  req: Request<{ Section: Section }>,
-  res: Response
-) => {
+export const createSection = async (req: Request, res: Response) => {
   try {
-    const { body: data } = req ?? {};
-    const id = await addSection(data);
+    const id = await addSection(req.body);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating section:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating section:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const searchSection = async (
-  req: Request<{ section_id: string }>,
-  res: Response
-) => {
+export const getSection = async (req: Request, res: Response) => {
   try {
-    const { section_id: sectionId } = req.params;
-    if (!sectionId) {
-      return res.status(400).json({ error: 'Section ID is required' });
-    }
-    const sections = await searchSectionApi(sectionId);
-    res.status(200).json(sections);
+    const { section_id } = req.params;
+    const section = await getSectionById(section_id);
+    if (!section) return res.status(404).json({ error: 'Section not found' });
+    res.status(200).json({ section });
   } catch (error) {
-    logger.error('Error searching for sections:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching section:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const deleteSectionDetails = async (
-  req: Request<{ section_id: string }>,
-  res: Response
-): Promise<Response | void> => {
+export const getAllSectionsHandler = async (req: Request, res: Response) => {
   try {
-    const { section_id: sectionId } = req.params;
-    if (!sectionId) {
-      return res.status(400).json({ error: 'Section ID is required' });
-    }
-    const deleted = await deleteSection(sectionId);
-    logger.info('deleted section data', deleted);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Section not found' });
-    }
-    res.status(204).json({});
+    const sections = await getAllSections();
+    res.status(200).json({ sections });
   } catch (error) {
-    logger.error('Error deleting section details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all sections:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const getAllSections = async (req: Request, res: Response) => {
+export const updateSectionHandler = async (req: Request, res: Response) => {
   try {
-    const sections = await getAllSectionDetails();
-    res.status(200).json(sections);
+    const { section_id } = req.params;
+    const updated = await updateSection(section_id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Section not found' });
+    res.status(204).send();
   } catch (error) {
-    logger.error('Error fetching all sections:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating section:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const updateSectionDetails = async (
-  req: Request<{ section_id: string; Section: Partial<Section> }>,
-  res: Response
-) => {
+export const deleteSectionHandler = async (req: Request, res: Response) => {
   try {
-    const { section_id: sectionId } = req.params;
-    if (!sectionId) {
-      return res.status(400).json({ error: 'Section ID is required' });
-    }
-    const data = req?.body;
-    const updated = await updateSection(sectionId, data);
-    if (!updated) {
-      return res.status(404).json({ error: 'Section not found' });
-    }
-    res.status(204).json({});
+    const { section_id } = req.params;
+    const deleted = await deleteSection(section_id);
+    if (!deleted) return res.status(404).json({ error: 'Section not found' });
+    res.status(204).send();
   } catch (error) {
-    logger.error('Error updating section details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting section:', message);
+    res.status(httpCode).json({ error: message });
   }
 };

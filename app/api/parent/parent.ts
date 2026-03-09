@@ -1,95 +1,64 @@
 import { db } from '../../firebase.js';
-import type parent from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
-
-type Parent = typeof parent;
+import { docsToFlat, docToFlat, now } from '../../utils/helper.js';
 
 if (!db)
-  throw new AppError(
-    'Database or Auth connection not established',
-    HttpCode.INTERNAL_SERVER_ERROR
-  );
+  throw new AppError('Database connection not established', HttpCode.INTERNAL_SERVER_ERROR);
+
+interface Parent {
+  f_name: string;
+  l_name: string;
+  dob: string;
+  gender: string;
+  occupation: string;
+  relation: string;
+  phone_num: string;
+  student_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 const parentCollection = db.collection('parents');
 
-export const addParent = async (data: Parent): Promise<string> => {
-  const docRef = await parentCollection.add(data);
+export const getAllParents = async (): Promise<(Parent & { id: string })[]> => {
+  const snapshot = await parentCollection.get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Parent>(snapshot.docs);
+};
+
+export const getParentById = async (id: string): Promise<(Parent & { id: string }) | null> => {
+  const doc = await parentCollection.doc(id).get();
+  if (!doc.exists) return null;
+  return docToFlat<Parent>(doc);
+};
+
+export const addParent = async (data: Omit<Parent, 'created_at' | 'updated_at'>): Promise<string> => {
+  const docRef = await parentCollection.add({ ...data, created_at: now(), updated_at: now() });
   logger.info(`Parent added with ID: ${docRef.id}`);
   return docRef.id;
 };
 
-export const getParent = async (
-  parentId: string
-): Promise<{ id: string; parent: Parent | null }[]> => {
-  const parentDoc = await parentCollection
-    .where('parent_id', '==', parentId)
-    .get();
-  if (parentDoc.empty) {
-    logger.info(`No parent found with ID: ${parentId}`);
-    return [{ id: '', parent: null }];
-  }
-  return mapDocsWithKey<Parent, 'parent'>(parentDoc.docs, 'parent');
-};
-
-export const deleteParent = async (parentId: string): Promise<boolean> => {
-  const parentData = await getParent(parentId);
-  if (!parentData.length || parentData[0].parent === null) {
-    logger.info(`No parent found to delete with ID: ${parentId}`);
+export const updateParent = async (id: string, data: Partial<Parent>): Promise<boolean> => {
+  const docRef = parentCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No parent found with ID: ${id}`);
     return false;
   }
-  const deletePromises = parentData.map(({ id }) => {
-    logger.info(`Deleting parent with ID: ${id}`);
-    return parentCollection.doc(id).delete();
-  });
-
-  await Promise.all(deletePromises);
-  logger.info(`Deleted ${parentData.length} parent(s) with ID: ${parentId}`);
+  await docRef.update({ ...data, updated_at: now() });
+  logger.info(`Updated parent with ID: ${id}`);
   return true;
 };
 
-export const searchParent = async (
-  parentId: string
-): Promise<{ id: string; parent: Parent | null }[]> => {
-  const snapshot = await parentCollection
-    .where('parent_id', '==', parentId)
-    .get();
-  if (snapshot.empty) {
-    logger.info(`No parents found with ID: ${parentId}`);
-    return [];
-  }
-  logger.info(`Parents found with ID: ${parentId}`);
-  return mapDocsWithKey<Parent, 'parent'>(snapshot.docs, 'parent');
-};
-
-export const getAllParentDetails = async (): Promise<
-  { id: string; parent: Parent | null }[]
-> => {
-  const snapshot = await parentCollection.get();
-  if (snapshot.empty) {
-    logger.info(`No parents found in the database`);
-    return [];
-  }
-  logger.info(`Fetched all parents from the database`);
-  return mapDocsWithKey<Parent, 'parent'>(snapshot.docs, 'parent');
-};
-
-export const updateParent = async (
-  parentId: string,
-  data: Partial<Parent>
-): Promise<boolean> => {
-  logger.info(`Updating parent with ID: ${parentId}`);
-  const parentData = await getParent(parentId);
-  if (!parentData.length || parentData[0].parent === null) {
-    logger.info(`No parent found to update with ID: ${parentId}`);
+export const deleteParent = async (id: string): Promise<boolean> => {
+  const docRef = parentCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No parent found with ID: ${id}`);
     return false;
   }
-  const updatePromises = parentData.map(({ id }) => {
-    const parentRef = parentCollection.doc(id);
-    return parentRef.update(data);
-  });
-  await Promise.all(updatePromises);
-  logger.info(`Updated ${parentData.length} parent(s) with ID: ${parentId}`);
+  await docRef.delete();
+  logger.info(`Deleted parent with ID: ${id}`);
   return true;
 };

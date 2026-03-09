@@ -1,100 +1,73 @@
 import { db } from '../../firebase.js';
-import type timeTable from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
-type TimeTable = typeof timeTable;
+import { docsToFlat, docToFlat, now } from '../../utils/helper.js';
 
 if (!db)
-  throw new AppError(
-    'Database or Auth connection not established',
-    HttpCode.INTERNAL_SERVER_ERROR
-  );
+  throw new AppError('Database connection not established', HttpCode.INTERNAL_SERVER_ERROR);
 
-const timeTableCollection = db.collection('timetables');
+type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
 
-export const addTimeTable = async (data: TimeTable): Promise<string> => {
-  const docRef = await timeTableCollection.add(data);
-  logger.info(`TimeTable added with ID: ${docRef?.id}`);
+interface Timetable {
+  day_of_week: DayOfWeek;
+  period: number;
+  section_id: string;
+  subject_id: string;
+  teacher_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const timetableCollection = db.collection('timetables');
+
+export const getAllTimetables = async (): Promise<(Timetable & { id: string })[]> => {
+  const snapshot = await timetableCollection.get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Timetable>(snapshot.docs);
+};
+
+export const getTimetableById = async (id: string): Promise<(Timetable & { id: string }) | null> => {
+  const doc = await timetableCollection.doc(id).get();
+  if (!doc.exists) return null;
+  return docToFlat<Timetable>(doc);
+};
+
+export const getTimetableBySection = async (
+  sectionId: string
+): Promise<(Timetable & { id: string })[]> => {
+  const snapshot = await timetableCollection.where('section_id', '==', sectionId).get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Timetable>(snapshot.docs);
+};
+
+export const addTimetable = async (
+  data: Omit<Timetable, 'created_at' | 'updated_at'>
+): Promise<string> => {
+  const docRef = await timetableCollection.add({ ...data, created_at: now(), updated_at: now() });
+  logger.info(`Timetable added with ID: ${docRef.id}`);
   return docRef.id;
 };
 
-export const getTimeTable = async (
-  timeTableId: string
-): Promise<{ id: string; timeTable: TimeTable | null }[]> => {
-  const timeTableDoc = await timeTableCollection
-    .where('timetable_id', '==', timeTableId)
-    .get();
-  if (timeTableDoc.empty) {
-    logger.info(`No time table found with ID: ${timeTableId}`);
-    return [{ id: '', timeTable: null }];
-  }
-  return mapDocsWithKey<TimeTable, 'timeTable'>(timeTableDoc.docs, 'timeTable');
-};
-
-export const deleteTimeTable = async (
-  timeTableId: string
-): Promise<boolean> => {
-  const timeTableData = await getTimeTable(timeTableId);
-  if (!timeTableData?.length || timeTableData?.[0]?.timeTable === null) {
-    logger.info(`No time table found to delete with ID: ${timeTableId}`);
+export const updateTimetable = async (id: string, data: Partial<Timetable>): Promise<boolean> => {
+  const docRef = timetableCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No timetable found with ID: ${id}`);
     return false;
   }
-  const deletePromises = timeTableData?.map(({ id }) => {
-    logger.info(`Deleting time table with ID: ${id}`);
-    return timeTableCollection.doc(id).delete();
-  });
-
-  await Promise.all(deletePromises || []);
-  logger.info(
-    `Deleted ${timeTableData?.length} time table(s) with ID: ${timeTableId}`
-  );
+  await docRef.update({ ...data, updated_at: now() });
+  logger.info(`Updated timetable with ID: ${id}`);
   return true;
 };
 
-export const searchTimeTable = async (
-  timeTableId: string
-): Promise<{ id: string; timeTable: TimeTable | null }[]> => {
-  const snapshot = await timeTableCollection
-    .where('timetable_id', '==', timeTableId)
-    .get();
-  if (snapshot.empty) {
-    logger.info(`No time table found with ID: ${timeTableId}`);
-    return [];
-  }
-  logger.info(`Time table found with ID: ${timeTableId}`);
-  return mapDocsWithKey<TimeTable, 'timeTable'>(snapshot.docs, 'timeTable');
-};
-
-export const getAllTimeTables = async (): Promise<
-  { id: string; timeTable: TimeTable | null }[]
-> => {
-  const snapshot = await timeTableCollection.get();
-  if (snapshot.empty) {
-    logger.info(`No time tables found in the database`);
-    return [];
-  }
-  logger.info(`Fetched all time tables from the database`);
-  return mapDocsWithKey<TimeTable, 'timeTable'>(snapshot.docs, 'timeTable');
-};
-
-export const updateTimeTable = async (
-  timeTableId: string,
-  data: Partial<TimeTable>
-): Promise<boolean> => {
-  logger.info(`Updating time table with ID: ${timeTableId}`);
-  const timeTableData = await getTimeTable(timeTableId);
-  if (!timeTableData?.length || timeTableData?.[0]?.timeTable === null) {
-    logger.info(`No time table found to update with ID: ${timeTableId}`);
+export const deleteTimetable = async (id: string): Promise<boolean> => {
+  const docRef = timetableCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No timetable found with ID: ${id}`);
     return false;
   }
-  const updatePromises = timeTableData?.map(({ id }) => {
-    const timeTableRef = timeTableCollection.doc(id);
-    return timeTableRef.update(data);
-  });
-  await Promise.all(updatePromises || []);
-  logger.info(
-    `Updated ${timeTableData?.length} time table(s) with ID: ${timeTableId}`
-  );
+  await docRef.delete();
+  logger.info(`Deleted timetable with ID: ${id}`);
   return true;
 };

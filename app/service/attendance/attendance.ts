@@ -1,94 +1,98 @@
 import { Request, Response } from 'express';
-import type attendance from '@setupati-school/setupati-types/models';
-import logger from '../../utils/logger.js';
 import {
+  getAllAttendance,
+  getAttendanceById,
+  getAttendanceByStudent,
+  getAttendanceBySection,
   addAttendance,
-  deleteAttendance,
-  getAllAttendanceDetails,
   updateAttendance,
-  searchAttendance as searchAttendanceApi
+  deleteAttendance
 } from '../../api/attendance/attendance.js';
-type Attendance = typeof attendance;
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
+import logger from '../../utils/logger.js';
 
-export const createAttendance = async (
-  req: Request<{ Attendance: Attendance }>,
-  res: Response
-) => {
+export const createAttendance = async (req: Request, res: Response) => {
   try {
-    const { body: data } = req ?? {};
-    const id = await addAttendance(data);
+    const id = await addAttendance(req.body);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating attendance:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating attendance:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const searchAttendance = async (
-  req: Request<{ attendance_id: string }>,
-  res: Response
-) => {
+export const getAttendanceHandler = async (req: Request, res: Response) => {
   try {
-    const { attendance_id: attendanceId } = req.params;
-    if (!attendanceId) {
-      return res.status(400).json({ error: 'Attendance ID is required' });
-    }
-    const attendance = await searchAttendanceApi(attendanceId);
-    res.status(200).json(attendance);
+    const { attendance_id } = req.params;
+    const record = await getAttendanceById(attendance_id);
+    if (!record) return res.status(404).json({ error: 'Attendance record not found' });
+    res.status(200).json({ attendance: record });
   } catch (error) {
-    logger.error('Error searching for attendance:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching attendance:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const deleteAttendanceDetails = async (
-  req: Request<{ attendance_id: string }>,
-  res: Response
-): Promise<Response | void> => {
+export const getAllAttendanceHandler = async (req: Request, res: Response) => {
   try {
-    const { attendance_id: attendanceId } = req.params;
-    if (!attendanceId) {
-      return res.status(400).json({ error: 'Attendance ID is required' });
-    }
-    const deleted = await deleteAttendance(attendanceId);
-    logger.info('deleted attendance data', deleted);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Attendance not found' });
-    }
-    res.status(204).json({});
+    const attendance = await getAllAttendance();
+    res.status(200).json({ attendance });
   } catch (error) {
-    logger.error('Error deleting attendance details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all attendance:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const getAllAttendance = async (req: Request, res: Response) => {
+export const getAttendanceByStudentHandler = async (req: Request, res: Response) => {
   try {
-    const attendance = await getAllAttendanceDetails();
-    res.status(200).json(attendance);
+    const { student_id } = req.params;
+    const attendance = await getAttendanceByStudent(student_id);
+    res.status(200).json({ attendance });
   } catch (error) {
-    logger.error('Error fetching all attendance:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching student attendance:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const updateAttendanceDetails = async (
-  req: Request<{ attendance_id: string; Attendance: Partial<Attendance> }>,
-  res: Response
-) => {
+export const getAttendanceBySectionHandler = async (req: Request, res: Response) => {
   try {
-    const { attendance_id: attendanceId } = req.params;
-    if (!attendanceId) {
-      return res.status(400).json({ error: 'Attendance ID is required' });
-    }
-    const data = req?.body;
-    const updated = await updateAttendance(attendanceId, data);
-    if (!updated) {
-      return res.status(404).json({ error: 'Attendance not found' });
-    }
-    res.status(204).json({});
+    const { section_id } = req.params;
+    const { date } = req.query as { date?: string };
+    const attendance = await getAttendanceBySection(section_id, date);
+    res.status(200).json({ attendance });
   } catch (error) {
-    logger.error('Error updating attendance details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching section attendance:', message);
+    res.status(httpCode).json({ error: message });
+  }
+};
+
+export const updateAttendanceHandler = async (req: Request, res: Response) => {
+  try {
+    const { attendance_id } = req.params;
+    const updated = await updateAttendance(attendance_id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Attendance record not found' });
+    res.status(204).send();
+  } catch (error) {
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating attendance:', message);
+    res.status(httpCode).json({ error: message });
+  }
+};
+
+export const deleteAttendanceHandler = async (req: Request, res: Response) => {
+  try {
+    const { attendance_id } = req.params;
+    const deleted = await deleteAttendance(attendance_id);
+    if (!deleted) return res.status(404).json({ error: 'Attendance record not found' });
+    res.status(204).send();
+  } catch (error) {
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting attendance:', message);
+    res.status(httpCode).json({ error: message });
   }
 };

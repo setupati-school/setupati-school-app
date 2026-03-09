@@ -1,49 +1,50 @@
+import { Router } from 'express';
 import {
   createStudent,
-  searchStudent,
-  deleteStudentDetails,
-  getAllStudents,
-  updateStudentDetails
+  getStudent,
+  getAllStudentsHandler,
+  searchStudentByRollNo,
+  updateStudentHandler,
+  deleteStudentHandler
 } from '../service/student/student.js';
-import { Router, Request, Response } from 'express';
-import type student from '@setupati-school/setupati-types/models';
-type Student = typeof student;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const studentRouter = Router();
 
 studentRouter.post(
   '/create',
-  (req: Request<{ Student: Student }>, res: Response) => {
-    createStudent(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => createStudent(req, res)
+);
+
+studentRouter.get('/all', isAuthenticated, (req, res) => getAllStudentsHandler(req, res));
+
+studentRouter.get(
+  '/search/:roll_no',
+  isAuthenticated,
+  (req, res) => searchStudentByRollNo(req, res)
 );
 
 studentRouter.get(
-  '/search/:student_rollno',
-  (req: Request<{ student_rollno: string }>, res: Response) => {
-    searchStudent(req, res);
-  }
+  '/:student_id',
+  isAuthenticated,
+  (req, res) => getStudent(req, res)
+);
+
+studentRouter.put(
+  '/:student_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => updateStudentHandler(req, res)
 );
 
 studentRouter.delete(
-  '/delete/:student_rollno',
-  (req: Request<{ student_rollno: string }>, res: Response) => {
-    deleteStudentDetails(req, res);
-  }
-);
-
-studentRouter.get('/all', (req: Request, res: Response) => {
-  return getAllStudents(req, res);
-});
-
-studentRouter.put(
-  '/update/:student_rollno',
-  (
-    req: Request<{ student_rollno: string; Student: Partial<Student> }>,
-    res: Response
-  ) => {
-    updateStudentDetails(req, res);
-  }
+  '/:student_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteStudentHandler(req, res)
 );
 
 export default studentRouter;

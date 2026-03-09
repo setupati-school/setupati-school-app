@@ -1,129 +1,83 @@
 import { db } from '../../firebase.js';
-import type examTimeTable from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey, now } from '../../utils/helper.js';
-type ExamTimeTable = typeof examTimeTable;
+import { docsToFlat, docToFlat, now } from '../../utils/helper.js';
 
 if (!db)
-  throw new AppError(
-    'Database or Auth connection not established',
-    HttpCode.INTERNAL_SERVER_ERROR
-  );
+  throw new AppError('Database connection not established', HttpCode.INTERNAL_SERVER_ERROR);
 
-const examTimeTableCollection = db.collection('exam_timetables');
+type ExamType = 'Unit Test' | 'Quarterly' | 'Half-Yearly' | 'Annual';
 
-export const addExamTimeTable = async (
-  data: ExamTimeTable
+interface ExamTimetable {
+  grade_id: string;
+  subject_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  exam_type: ExamType;
+  created_at: string;
+  updated_at: string;
+}
+
+const examTimetableCollection = db.collection('exam_timetables');
+
+export const getAllExamTimetables = async (): Promise<(ExamTimetable & { id: string })[]> => {
+  const snapshot = await examTimetableCollection.orderBy('date', 'asc').get();
+  if (snapshot.empty) return [];
+  return docsToFlat<ExamTimetable>(snapshot.docs);
+};
+
+export const getExamTimetableById = async (
+  id: string
+): Promise<(ExamTimetable & { id: string }) | null> => {
+  const doc = await examTimetableCollection.doc(id).get();
+  if (!doc.exists) return null;
+  return docToFlat<ExamTimetable>(doc);
+};
+
+export const getExamTimetablesByGrade = async (
+  gradeId: string
+): Promise<(ExamTimetable & { id: string })[]> => {
+  const snapshot = await examTimetableCollection.where('grade_id', '==', gradeId).get();
+  if (snapshot.empty) return [];
+  return docsToFlat<ExamTimetable>(snapshot.docs);
+};
+
+export const addExamTimetable = async (
+  data: Omit<ExamTimetable, 'created_at' | 'updated_at'>
 ): Promise<string> => {
-  const docRef = await examTimeTableCollection.add({
+  const docRef = await examTimetableCollection.add({
     ...data,
-    exam_time_table_id: data?.exam_time_table_id || `exam_tt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    created_at: data?.created_at || now,
-    updated_at: now
+    created_at: now(),
+    updated_at: now()
   });
-  logger.info(`ExamTimeTable added with ID: ${docRef.id}`);
+  logger.info(`Exam timetable added with ID: ${docRef.id}`);
   return docRef.id;
 };
 
-export const getExamTimeTable = async (
-  examTimeTableId: string
-): Promise<{ id: string; examTimeTable: ExamTimeTable | null }[]> => {
-  const examTimeTableDoc = await examTimeTableCollection
-    .where('exam_time_table_id', '==', examTimeTableId)
-    .get();
-  if (examTimeTableDoc.empty) {
-    logger.info(`No exam time table found with ID: ${examTimeTableId}`);
-    return [{ id: '', examTimeTable: null }];
-  }
-  return mapDocsWithKey<ExamTimeTable, 'examTimeTable'>(
-    examTimeTableDoc.docs,
-    'examTimeTable'
-  );
-};
-
-export const deleteExamTimeTable = async (
-  examTimeTableId: string
+export const updateExamTimetable = async (
+  id: string,
+  data: Partial<ExamTimetable>
 ): Promise<boolean> => {
-  const examTimeTableData = await getExamTimeTable(examTimeTableId);
-  if (
-    !examTimeTableData.length ||
-    examTimeTableData[0].examTimeTable === null
-  ) {
-    logger.info(
-      `No exam time table found to delete with ID: ${examTimeTableId}`
-    );
+  const docRef = examTimetableCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No exam timetable found with ID: ${id}`);
     return false;
   }
-  const deletePromises = examTimeTableData.map(({ id }) => {
-    logger.info(`Deleting exam time table with ID: ${id}`);
-    return examTimeTableCollection.doc(id).delete();
-  });
-
-  await Promise.all(deletePromises);
-  logger.info(
-    `Deleted ${examTimeTableData.length} exam time table(s) with ID: ${examTimeTableId}`
-  );
+  await docRef.update({ ...data, updated_at: now() });
+  logger.info(`Updated exam timetable with ID: ${id}`);
   return true;
 };
 
-export const searchExamTimeTable = async (
-  examTimeTableId: string
-): Promise<{ id: string; examTimeTable: ExamTimeTable | null }[]> => {
-  const snapshot = await examTimeTableCollection
-    .where('exam_time_table_id', '==', examTimeTableId)
-    .get();
-  if (snapshot.empty) {
-    logger.info(`No exam time table found with ID: ${examTimeTableId}`);
-    return [];
-  }
-  logger.info(`Exam time table found with ID: ${examTimeTableId}`);
-  return mapDocsWithKey<ExamTimeTable, 'examTimeTable'>(
-    snapshot.docs,
-    'examTimeTable'
-  );
-};
-
-export const getAllExamTimeTables = async (): Promise<
-  { id: string; examTimeTable: ExamTimeTable | null }[]
-> => {
-  const snapshot = await examTimeTableCollection.get();
-  if (snapshot.empty) {
-    logger.info(`No exam time tables found in the database`);
-    return [];
-  }
-  logger.info(`Fetched all exam time tables from the database`);
-  return mapDocsWithKey<ExamTimeTable, 'examTimeTable'>(
-    snapshot.docs,
-    'examTimeTable'
-  );
-};
-
-export const updateExamTimeTable = async (
-  examTimeTableId: string,
-  data: Partial<ExamTimeTable>
-): Promise<boolean> => {
-  logger.info(`Updating exam time table with ID: ${examTimeTableId}`);
-  const examTimeTableData = await getExamTimeTable(examTimeTableId);
-  if (
-    !examTimeTableData?.length ||
-    examTimeTableData?.[0]?.examTimeTable === null
-  ) {
-    logger.info(
-      `No exam time table found to update with ID: ${examTimeTableId}`
-    );
+export const deleteExamTimetable = async (id: string): Promise<boolean> => {
+  const docRef = examTimetableCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No exam timetable found with ID: ${id}`);
     return false;
   }
-  const updatePromises = examTimeTableData?.map(({ id }) => {
-    const examTimeTableRef = examTimeTableCollection.doc(id);
-    return examTimeTableRef.update({
-      ...data,
-      updated_at: now
-    });
-  });
-  await Promise.all(updatePromises);
-  logger.info(
-    `Updated ${examTimeTableData?.length} exam time table(s) with ID: ${examTimeTableId}`
-  );
+  await docRef.delete();
+  logger.info(`Deleted exam timetable with ID: ${id}`);
   return true;
 };

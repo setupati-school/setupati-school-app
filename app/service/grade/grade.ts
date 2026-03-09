@@ -1,94 +1,71 @@
 import { Request, Response } from 'express';
-import type grade from '@setupati-school/setupati-types/models';
-import logger from '../../utils/logger.js';
 import {
+  getAllGrades,
+  getGradeById,
   addGrade,
-  deleteGrade,
-  getAllGradeDetails,
   updateGrade,
-  searchGrade as searchGradeApi
+  deleteGrade
 } from '../../api/grade/grade.js';
-type Grade = typeof grade;
+import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
+import logger from '../../utils/logger.js';
 
-export const createGrade = async (
-  req: Request<{ Grade: Grade }>,
-  res: Response
-) => {
+export const createGrade = async (req: Request, res: Response) => {
   try {
-    const { body: data } = req ?? {};
-    const id = await addGrade(data);
+    const id = await addGrade(req.body);
     res.status(201).json({ id });
   } catch (error) {
-    logger.error('Error creating grade:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error creating grade:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const searchGrade = async (
-  req: Request<{ grade_id: string }>,
-  res: Response
-) => {
+export const getGrade = async (req: Request, res: Response) => {
   try {
-    const { grade_id: gradeName } = req.params;
-    if (!gradeName) {
-      return res.status(400).json({ error: 'Grade ID is required' });
-    }
-    const grades = await searchGradeApi(gradeName);
-    res.status(200).json(grades);
+    const { grade_id } = req.params;
+    const grade = await getGradeById(grade_id);
+    if (!grade) return res.status(404).json({ error: 'Grade not found' });
+    res.status(200).json({ grade });
   } catch (error) {
-    logger.error('Error searching for grades:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching grade:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const deleteGradeDetails = async (
-  req: Request<{ grade_id: string }>,
-  res: Response
-): Promise<Response | void> => {
+export const getAllGradesHandler = async (req: Request, res: Response) => {
   try {
-    const { grade_id: gradeName } = req.params;
-    if (!gradeName) {
-      return res.status(400).json({ error: 'Grade ID is required' });
-    }
-    const deleted = await deleteGrade(gradeName);
-    logger.info('deleted grade data', deleted);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Grade not found' });
-    }
-    res.status(204).json({});
+    const grades = await getAllGrades();
+    res.status(200).json({ grades });
   } catch (error) {
-    logger.error('Error deleting grade details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error fetching all grades:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const getAllGrades = async (req: Request, res: Response) => {
+export const updateGradeHandler = async (req: Request, res: Response) => {
   try {
-    const grades = await getAllGradeDetails();
-    res.status(200).json(grades);
+    const { grade_id } = req.params;
+    const updated = await updateGrade(grade_id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Grade not found' });
+    res.status(204).send();
   } catch (error) {
-    logger.error('Error fetching all grades:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error updating grade:', message);
+    res.status(httpCode).json({ error: message });
   }
 };
 
-export const updateGradeDetails = async (
-  req: Request<{ grade_id: string; Grade: Partial<Grade> }>,
-  res: Response
-) => {
+export const deleteGradeHandler = async (req: Request, res: Response) => {
   try {
-    const { grade_id: gradeName } = req.params;
-    if (!gradeName) {
-      return res.status(400).json({ error: 'Grade ID is required' });
-    }
-    const data = req?.body;
-    const updated = await updateGrade(gradeName, data);
-    if (!updated) {
-      return res.status(404).json({ error: 'Grade not found' });
-    }
-    res.status(204).json({});
+    const { grade_id } = req.params;
+    const deleted = await deleteGrade(grade_id);
+    if (!deleted) return res.status(404).json({ error: 'Grade not found' });
+    res.status(204).send();
   } catch (error) {
-    logger.error('Error updating grade details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting grade:', message);
+    res.status(httpCode).json({ error: message });
   }
 };

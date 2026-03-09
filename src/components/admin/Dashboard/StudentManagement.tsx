@@ -14,7 +14,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import type { Student } from '@/types/schoolStoreType';
-import {getGrade, getSection} from '../../../lib/utils'; 
+import { getGrade, getSection } from '../../../lib/utils';
 
 interface StudentManagementProps {
   onViewStudent?: (student: Student) => void;
@@ -102,17 +102,20 @@ export const StudentManagement = ({ onViewStudent }: StudentManagementProps) => 
                 </div>
                 <div className="space-y-1 ml-5">
                   {gradeStudents.slice(0, 5).map((student) => {
-                    const section = getSection(student?.section_id,sections);
+                    const section = getSection(student?.section_id, sections);
                     return (
                       <button
                         key={student.id}
                         onClick={() => onViewStudent?.(student)}
                         className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
                       >
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-                          {student?.f_name[0]}
-                          {student?.l_name[0]}
-                        </div>
+                        {/* {
+                          (student?.f_name.length > 0 && student?.l_name.length > 0) && <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
+                            {student?.f_name[0]}
+                            {student?.l_name[0]}
+                          </div>
+                        } */}
+
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
                             {student?.f_name} {student?.l_name}

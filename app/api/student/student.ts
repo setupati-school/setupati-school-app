@@ -1,99 +1,79 @@
 import { db } from '../../firebase.js';
-import type student from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
-import logger from './../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
-type Student = typeof student;
+import logger from '../../utils/logger.js';
+import { docsToFlat, docToFlat, now } from '../../utils/helper.js';
 
 if (!db)
-  throw new AppError(
-    'Database or Auth connection not established',
-    HttpCode.INTERNAL_SERVER_ERROR
-  );
+  throw new AppError('Database connection not established', HttpCode.INTERNAL_SERVER_ERROR);
+
+interface Student {
+  f_name: string;
+  l_name: string;
+  email: string;
+  roll_no: string;
+  grade_id: string;
+  section_id: string;
+  parent_id: string;
+  dob: string;
+  gender: string;
+  phone_num: string;
+  address_line1: string;
+  city: string;
+  state: string;
+  country: string;
+  pincode: string;
+  blood_group: string;
+  aadhar_no: string;
+  created_at: string;
+  updated_at: string;
+}
 
 const studentCollection = db.collection('students');
 
-export const addStudent = async (data: Student): Promise<string> => {
-  const docRef = await studentCollection.add(data);
+export const getAllStudents = async (): Promise<(Student & { id: string })[]> => {
+  const snapshot = await studentCollection.get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Student>(snapshot.docs);
+};
+
+export const getStudentById = async (id: string): Promise<(Student & { id: string }) | null> => {
+  const doc = await studentCollection.doc(id).get();
+  if (!doc.exists) return null;
+  return docToFlat<Student>(doc);
+};
+
+export const getStudentsByRollNo = async (rollNo: string): Promise<(Student & { id: string })[]> => {
+  const snapshot = await studentCollection.where('roll_no', '==', rollNo).get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Student>(snapshot.docs);
+};
+
+export const addStudent = async (data: Omit<Student, 'created_at' | 'updated_at'>): Promise<string> => {
+  const docRef = await studentCollection.add({ ...data, created_at: now(), updated_at: now() });
   logger.info(`Student added with ID: ${docRef.id}`);
   return docRef.id;
 };
 
-export const getStudent = async (
-  studentRollNo: string
-): Promise<{ id: string; student: Student | null }[]> => {
-  const studentDoc = await studentCollection
-    .where('roll_no', '==', studentRollNo)
-    .get();
-  if (studentDoc.empty) {
-    return [{ id: '', student: null }];
-  }
-  return mapDocsWithKey<Student, 'student'>(studentDoc.docs, 'student');
-};
-
-export const deleteStudent = async (
-  studentRollNo: string
-): Promise<boolean> => {
-  const studentData = await getStudent(studentRollNo);
-  if (!studentData.length || studentData[0].student === null) {
-    logger.info(`No students found with roll number: ${studentRollNo}`);
+export const updateStudent = async (id: string, data: Partial<Student>): Promise<boolean> => {
+  const docRef = studentCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No student found with ID: ${id}`);
     return false;
   }
-  const deletePromises = studentData.map(({ id }) => {
-    logger.info(`Deleting student with ID: ${id}`);
-    return studentCollection.doc(id).delete();
-  });
-  await Promise.all(deletePromises);
-  logger.info(
-    `Deleted ${studentData.length} student(s) with roll number: ${studentRollNo}`
-  );
+  await docRef.update({ ...data, updated_at: now() });
+  logger.info(`Updated student with ID: ${id}`);
   return true;
 };
 
-export const searchStudent = async (
-  studentRollNo: string
-): Promise<{ id: string; student: Student | null }[]> => {
-  const snapshot = await studentCollection
-    .where('roll_no', '==', studentRollNo)
-    .get();
-  if (snapshot.empty) {
-    return [];
-  }
-  logger.info(
-    `Student data found:  ${JSON.stringify(snapshot.docs.map((doc) => doc.data()))}`
-  );
-  return mapDocsWithKey<Student, 'student'>(snapshot.docs, 'student');
-};
-
-export const getAllStudentDetails = async (): Promise<
-  { id: string; student: Student | null }[]
-> => {
-  const snapshot = await studentCollection.get();
-  if (snapshot.empty) {
-    return [];
-  }
-  logger.info(
-    `All student data found: ${JSON.stringify(snapshot.docs.map((doc) => doc.data()))}`
-  );
-  return mapDocsWithKey<Student, 'student'>(snapshot.docs, 'student');
-};
-
-export const updateStudent = async (
-  studentRollNo: string,
-  data: Partial<Student>
-): Promise<boolean> => {
-  const studentData = await getStudent(studentRollNo);
-  if (!studentData.length || studentData[0].student === null) {
-    logger.info(`No students found with roll number: ${studentRollNo}`);
+export const deleteStudent = async (id: string): Promise<boolean> => {
+  const docRef = studentCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No student found with ID: ${id}`);
     return false;
   }
-  const updatePromises = studentData.map(({ id }) => {
-    const studentRef = studentCollection.doc(id);
-    return studentRef.update(data);
-  });
-  await Promise.all(updatePromises);
-  logger.info(
-    `Updated ${studentData.length} student(s) with roll number: ${studentRollNo}`
-  );
+  await docRef.delete();
+  logger.info(`Deleted student with ID: ${id}`);
   return true;
 };

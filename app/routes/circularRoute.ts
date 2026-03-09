@@ -1,18 +1,15 @@
 import { Router } from 'express';
 import {
   createCircular,
-  deleteCircularDetails,
-  getAllCirculars,
-  searchCircular,
-  updateCircularDetails
+  getCircular,
+  getAllCircularsHandler,
+  updateCircularHandler,
+  deleteCircularHandler
 } from '../service/circular/circular.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 import { isAuthorized } from '../middlewares/isAuthorized.js';
 import { validateBody } from '../middlewares/validateRequest.js';
-import {
-  createCircularSchema,
-  updateCircularSchema
-} from '../zod/circularSchema.js';
+import { createCircularSchema, updateCircularSchema } from '../zod/circularSchema.js';
 
 const circularRouter = Router();
 
@@ -21,36 +18,26 @@ circularRouter.post(
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createCircularSchema),
-  (req,res) => {
-  createCircular(req,res);
-  }
+  (req, res) => createCircular(req, res)
 );
 
-circularRouter.get('/search/:circular_id', isAuthenticated, (req, res) => {
-  searchCircular(req, res);
-});
+circularRouter.get('/all', isAuthenticated, (req, res) => getAllCircularsHandler(req, res));
 
-circularRouter.delete(
-  '/delete/:circular_id',
-  isAuthenticated,
-  isAuthorized({ hasRole: ['admin'] }),
-  (req, res) => {
-  deleteCircularDetails(req, res);
-  } 
-);
-
-circularRouter.get('/all', isAuthenticated, (req, res) => {
-  getAllCirculars(req, res);
-});
+circularRouter.get('/:circular_id', isAuthenticated, (req, res) => getCircular(req, res));
 
 circularRouter.put(
-  '/update/:circular_id',
+  '/:circular_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateCircularSchema),
-  (req, res) => {
-    updateCircularDetails(req, res);
-  } 
+  (req, res) => updateCircularHandler(req, res)
+);
+
+circularRouter.delete(
+  '/:circular_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteCircularHandler(req, res)
 );
 
 export default circularRouter;

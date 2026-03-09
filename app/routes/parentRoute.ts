@@ -1,50 +1,41 @@
-import { Router, Request, Response } from 'express';
-import type parent from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createParent,
-  getAllParents,
-  searchParent,
-  deleteParentDetails,
-  updateParentDetails
+  getParent,
+  getAllParentsHandler,
+  updateParentHandler,
+  deleteParentHandler
 } from '../service/parent/parent.js';
-
-type Parent = typeof parent;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const parentRouter = Router();
 
 parentRouter.post(
   '/create',
-  (req: Request<{ Parent: Parent }>, res: Response) => {
-    createParent(req, res);
-  }
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => createParent(req, res)
 );
 
-parentRouter.get(
-  '/search/:parent_id',
-  (req: Request<{ parent_id: string }>, res: Response) => {
-    searchParent(req, res);
-  }
+parentRouter.get('/all', isAuthenticated, isAuthorized({ hasRole: ['admin'] }), (req, res) =>
+  getAllParentsHandler(req, res)
+);
+
+parentRouter.get('/:parent_id', isAuthenticated, (req, res) => getParent(req, res));
+
+parentRouter.put(
+  '/:parent_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => updateParentHandler(req, res)
 );
 
 parentRouter.delete(
-  '/delete/:parent_id',
-  (req: Request<{ parent_id: string }>, res: Response) => {
-    deleteParentDetails(req, res);
-  }
-);
-
-parentRouter.get('/all', (req: Request, res: Response) => {
-  return getAllParents(req, res);
-});
-
-parentRouter.put(
-  '/update/:parent_id',
-  (
-    req: Request<{ parent_id: string; Parent: Partial<Parent> }>,
-    res: Response
-  ) => {
-    updateParentDetails(req, res);
-  }
+  '/:parent_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteParentHandler(req, res)
 );
 
 export default parentRouter;

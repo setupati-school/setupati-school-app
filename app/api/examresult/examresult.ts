@@ -1,128 +1,89 @@
 import { db } from '../../firebase.js';
-import type examResult from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
-type ExamResult = typeof examResult;
+import { docsToFlat, docToFlat, now } from '../../utils/helper.js';
 
 if (!db)
-  throw new AppError(
-    'Database or Auth connection not established',
-    HttpCode.INTERNAL_SERVER_ERROR
-  );
+  throw new AppError('Database connection not established', HttpCode.INTERNAL_SERVER_ERROR);
+
+interface SubjectMark {
+  subject_id: string;
+  marks: number;
+}
+
+interface ExamResult {
+  student_id: string;
+  exam_id: string;
+  subjects: SubjectMark[];
+  total: number;
+  pass_or_fail: 'pass' | 'fail';
+  created_at: string;
+  updated_at: string;
+}
 
 const examResultCollection = db.collection('exam_results');
 
-export const addExamResult = async (data: ExamResult): Promise<string> => {
-  const docRef = await examResultCollection.add(data);
-  logger.info(`ExamResult added with ID: ${docRef.id}`);
+export const getAllExamResults = async (): Promise<(ExamResult & { id: string })[]> => {
+  const snapshot = await examResultCollection.get();
+  if (snapshot.empty) return [];
+  return docsToFlat<ExamResult>(snapshot.docs);
+};
+
+export const getExamResultById = async (
+  id: string
+): Promise<(ExamResult & { id: string }) | null> => {
+  const doc = await examResultCollection.doc(id).get();
+  if (!doc.exists) return null;
+  return docToFlat<ExamResult>(doc);
+};
+
+export const getExamResultsByStudent = async (
+  studentId: string
+): Promise<(ExamResult & { id: string })[]> => {
+  const snapshot = await examResultCollection.where('student_id', '==', studentId).get();
+  if (snapshot.empty) return [];
+  return docsToFlat<ExamResult>(snapshot.docs);
+};
+
+export const getExamResultsByExam = async (
+  examId: string
+): Promise<(ExamResult & { id: string })[]> => {
+  const snapshot = await examResultCollection.where('exam_id', '==', examId).get();
+  if (snapshot.empty) return [];
+  return docsToFlat<ExamResult>(snapshot.docs);
+};
+
+export const addExamResult = async (
+  data: Omit<ExamResult, 'created_at' | 'updated_at'>
+): Promise<string> => {
+  const docRef = await examResultCollection.add({ ...data, created_at: now(), updated_at: now() });
+  logger.info(`Exam result added with ID: ${docRef.id}`);
   return docRef.id;
 };
 
-export const getExamResult = async (
-  examResultId: string
-): Promise<{ id: string; examResult: ExamResult | null }[]> => {
-  const examResultDoc = await examResultCollection
-    .where('exam_id', '==', examResultId)
-    .get();
-  if (examResultDoc.empty) {
-    throw new AppError('No ExamResult found', HttpCode.NOT_FOUND);
-  }
-  return mapDocsWithKey<ExamResult, 'examResult'>(
-    examResultDoc.docs,
-    'examResult'
-  );
-};
-
-export const deleteExamResult = async (
-  examResultId: string
-): Promise<boolean> => {
-  const docRef = examResultCollection.doc(examResultId);
-  const doc = await docRef.get();
-
-  if (doc.exists) {
-    await docRef.delete();
-    logger.info(`Deleted exam result with document ID: ${examResultId}`);
-    return true;
-  }
-  const examResultData = await getExamResult(examResultId);
-  if (!examResultData.length || examResultData[0].examResult === null) {
-    throw new AppError('No ExamResult found to delete', HttpCode.NOT_FOUND);
-  }
-  const deletePromises = examResultData.map(({ id }) => {
-    logger.info(`Deleting exam result with ID: ${id}`);
-    return examResultCollection.doc(id).delete();
-  });
-
-  await Promise.all(deletePromises);
-  logger.info(
-    `Deleted ${examResultData.length} exam result(s) with ID: ${examResultId}`
-  );
-  return true;
-};
-
-export const searchExamResult = async (
-  examResultId: string
-): Promise<{ id: string; examResult: ExamResult | null }[]> => {
-  const snapshot = await examResultCollection
-    .where('exam_id', '==', examResultId)
-    .get();
-  if (snapshot.empty) {
-    throw new AppError('No ExamResult found', HttpCode.NOT_FOUND);
-  }
-  logger.info(`Exam result found with ID: ${examResultId}`);
-  return mapDocsWithKey<ExamResult, 'examResult'>(snapshot.docs, 'examResult');
-};
-
-export const getAllExamResults = async (): Promise<
-  { id: string; examResult: ExamResult | null }[]
-> => {
-  const snapshot = await examResultCollection.get();
-  if (snapshot.empty) {
-    throw new AppError('No ExamResults found', HttpCode.NOT_FOUND);
-  }
-  logger.info(`Fetched all exam results from the database`);
-  return mapDocsWithKey<ExamResult, 'examResult'>(snapshot.docs, 'examResult');
-};
-
 export const updateExamResult = async (
-  examResultId: string,
+  id: string,
   data: Partial<ExamResult>
 ): Promise<boolean> => {
-  logger.info(`Updating exam result with ID: ${examResultId}`);
-  const docRef = examResultCollection.doc(examResultId);
+  const docRef = examResultCollection.doc(id);
   const doc = await docRef.get();
-
-  if (doc.exists) {
-    await docRef.update(data);
-    logger.info(`Updated exam result with document ID: ${examResultId}`);
-    return true;
+  if (!doc.exists) {
+    logger.info(`No exam result found with ID: ${id}`);
+    return false;
   }
-
-  const examResultData = await getExamResult(examResultId);
-  if (!examResultData.length || examResultData[0].examResult === null) {
-    throw new AppError('No ExamResult found to update', HttpCode.NOT_FOUND);
-  }
-  const updatePromises = examResultData.map(({ id }) => {
-    const examResultRef = examResultCollection.doc(id);
-    return examResultRef.update(data);
-  });
-  await Promise.all(updatePromises);
-  logger.info(
-    `Updated ${examResultData.length} exam result(s) with ID: ${examResultId}`
-  );
+  await docRef.update({ ...data, updated_at: now() });
+  logger.info(`Updated exam result with ID: ${id}`);
   return true;
 };
 
-export const getExamResultsByStudentId = async (
-  studentId: string
-): Promise<{ id: string; examResult: ExamResult | null }[]> => {
-  const snapshot = await examResultCollection
-    .where('student_id', '==', studentId)
-    .get();
-  if (snapshot.empty) {
-    throw new AppError('No ExamResults found for student ID', HttpCode.NOT_FOUND);
+export const deleteExamResult = async (id: string): Promise<boolean> => {
+  const docRef = examResultCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No exam result found with ID: ${id}`);
+    return false;
   }
-  logger.info(`Found exam results for student ID: ${studentId}`);
-  return mapDocsWithKey<ExamResult, 'examResult'>(snapshot.docs, 'examResult');
+  await docRef.delete();
+  logger.info(`Deleted exam result with ID: ${id}`);
+  return true;
 };

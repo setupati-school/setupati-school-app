@@ -1,63 +1,57 @@
-import { Router, Request, Response } from 'express';
-import type attendance from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createAttendance,
-  deleteAttendanceDetails,
-  getAllAttendance,
-  searchAttendance,
-  updateAttendanceDetails
+  getAttendanceHandler,
+  getAllAttendanceHandler,
+  getAttendanceByStudentHandler,
+  getAttendanceBySectionHandler,
+  updateAttendanceHandler,
+  deleteAttendanceHandler
 } from '../service/attendance/attendance.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 import { isAuthorized } from '../middlewares/isAuthorized.js';
 import { validateBody } from '../middlewares/validateRequest.js';
 import { createAttendanceSchema, updateAttendanceSchema } from '../zod/attendanceSchema.js';
 
-type Attendance = typeof attendance;
-
 const attendanceRouter = Router();
 
 attendanceRouter.post(
   '/create',
   isAuthenticated,
-  isAuthorized({ hasRole: ['admin'] }),
+  isAuthorized({ hasRole: ['admin', 'teacher'] }),
   validateBody(createAttendanceSchema),
-  (req: Request<{ Attendance: Attendance }>, res: Response) => {
-    createAttendance(req, res);
-  }
+  (req, res) => createAttendance(req, res)
+);
+
+attendanceRouter.get('/all', isAuthenticated, (req, res) => getAllAttendanceHandler(req, res));
+
+attendanceRouter.get(
+  '/student/:student_id',
+  isAuthenticated,
+  (req, res) => getAttendanceByStudentHandler(req, res)
 );
 
 attendanceRouter.get(
-  '/search/:attendance_id',
+  '/section/:section_id',
   isAuthenticated,
-  (req: Request<{ attendance_id: string }>, res: Response) => {
-    searchAttendance(req, res);
-  }
+  (req, res) => getAttendanceBySectionHandler(req, res)
+);
+
+attendanceRouter.get('/:attendance_id', isAuthenticated, (req, res) => getAttendanceHandler(req, res));
+
+attendanceRouter.put(
+  '/:attendance_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin', 'teacher'] }),
+  validateBody(updateAttendanceSchema),
+  (req, res) => updateAttendanceHandler(req, res)
 );
 
 attendanceRouter.delete(
-  '/delete/:attendance_id',
+  '/:attendance_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
-  (req: Request<{ attendance_id: string }>, res: Response) => {
-    deleteAttendanceDetails(req, res);
-  }
-);
-
-attendanceRouter.get('/all', isAuthenticated, (req: Request, res: Response) => {
-  return getAllAttendance(req, res);
-});
-
-attendanceRouter.put(
-  '/update/:attendance_id',
-  isAuthenticated,
-  isAuthorized({ hasRole: ['admin'] }),
-  validateBody(updateAttendanceSchema),
-  (
-    req: Request<{ attendance_id: string; Attendance: Partial<Attendance> }>,
-    res: Response
-  ) => {
-    updateAttendanceDetails(req, res);
-  }
+  (req, res) => deleteAttendanceHandler(req, res)
 );
 
 export default attendanceRouter;

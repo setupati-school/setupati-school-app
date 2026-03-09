@@ -1,56 +1,50 @@
 import { Router } from 'express';
 import {
-  createTimeTable,
-  searchTimeTable,
-  deleteTimeTableDetails,
-  getAllTimeTablesDetails,
-  updateTimeTableDetails
+  createTimetable,
+  getTimetable,
+  getAllTimetablesHandler,
+  getTimetableBySectionHandler,
+  updateTimetableHandler,
+  deleteTimetableHandler
 } from '../service/timetable/timetable.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 import { isAuthorized } from '../middlewares/isAuthorized.js';
 import { validateBody } from '../middlewares/validateRequest.js';
-import {
-  createTimetableSchema,
-  updateTimetableSchema
-} from '../zod/timetableSchema.js';
+import { createTimetableSchema, updateTimetableSchema } from '../zod/timetableSchema.js';
 
-const timeTableRouter = Router();
+const timetableRouter = Router();
 
-timeTableRouter.post(
+timetableRouter.post(
   '/create',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createTimetableSchema),
-  (req, res) => {
-  createTimeTable(req, res);
-  } 
+  (req, res) => createTimetable(req, res)
 );
 
+timetableRouter.get('/all', isAuthenticated, (req, res) => getAllTimetablesHandler(req, res));
 
-timeTableRouter.get('/search/:time_table_id', isAuthenticated, (req, res) => {
-  searchTimeTable(req, res);
-});
-timeTableRouter.delete(
-  '/delete/:time_table_id',
+timetableRouter.get(
+  '/section/:section_id',
   isAuthenticated,
-  isAuthorized({ hasRole: ['admin'] }),
-  (req, res) => {
-  deleteTimeTableDetails(req, res);
-  } 
+  (req, res) => getTimetableBySectionHandler(req, res)
 );
 
-timeTableRouter.get('/all', isAuthenticated, (req, res) => {
-  getAllTimeTablesDetails(req, res);
-});
+timetableRouter.get('/:timetable_id', isAuthenticated, (req, res) => getTimetable(req, res));
 
-timeTableRouter.put(
-  '/update/:time_table_id',
+timetableRouter.put(
+  '/:timetable_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateTimetableSchema),
-  (req, res) => {
-  updateTimeTableDetails(req, res);
-  } 
+  (req, res) => updateTimetableHandler(req, res)
 );
 
-export default timeTableRouter;
+timetableRouter.delete(
+  '/:timetable_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteTimetableHandler(req, res)
+);
+
+export default timetableRouter;

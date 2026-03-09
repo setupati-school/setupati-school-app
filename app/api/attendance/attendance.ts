@@ -1,111 +1,81 @@
 import { db } from '../../firebase.js';
-import type attendance from '@setupati-school/setupati-types/models';
 import { AppError, HttpCode } from '../../Error/error.js';
 import logger from '../../utils/logger.js';
-import { mapDocsWithKey } from '../../utils/helper.js';
-type Attendance = typeof attendance;
+import { docsToFlat, docToFlat, now } from '../../utils/helper.js';
 
 if (!db)
-  throw new AppError(
-    'Database or Auth connection not established',
-    HttpCode.INTERNAL_SERVER_ERROR
-  );
+  throw new AppError('Database connection not established', HttpCode.INTERNAL_SERVER_ERROR);
+
+interface Attendance {
+  student_id: string;
+  section_id: string;
+  date: string;
+  status: 'present' | 'absent' | 'late';
+  created_at: string;
+  updated_at: string;
+}
 
 const attendanceCollection = db.collection('attendance');
 
-export const addAttendance = async (data: Attendance): Promise<string> => {
-  const docRef = attendanceCollection.doc();
-  const generatedId = docRef.id;
-
-  const payload = {
-    ...data,
-    attendance_id: generatedId,
-    } as Attendance & { attendance_id: string};
-
-  await docRef.set(payload);
-  logger.info(`Attendance added with ID: ${generatedId}`);
-  return generatedId;
+export const getAllAttendance = async (): Promise<(Attendance & { id: string })[]> => {
+  const snapshot = await attendanceCollection.get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Attendance>(snapshot.docs);
 };
 
-export const getAttendance = async (
-  attendanceId: string
-): Promise<{ id: string; attendance: Attendance | null }[]> => {
-  const attendanceDoc = await attendanceCollection
-    .where('attendance_id', '==', attendanceId)
-    .get();
-  if (attendanceDoc.empty) {
-    logger.info(`No attendance found for student ID: ${attendanceId}`);
-    return [{ id: '', attendance: null }];
-  }
-  return mapDocsWithKey<Attendance, 'attendance'>(
-    attendanceDoc.docs,
-    'attendance'
-  );
+export const getAttendanceById = async (id: string): Promise<(Attendance & { id: string }) | null> => {
+  const doc = await attendanceCollection.doc(id).get();
+  if (!doc.exists) return null;
+  return docToFlat<Attendance>(doc);
 };
 
-export const deleteAttendance = async (
-  attendanceId: string
-): Promise<boolean> => {
-  const attendanceData = await getAttendance(attendanceId);
-  if (!attendanceData.length || attendanceData[0].attendance === null) {
-    logger.info(`No attendance found to delete with ID: ${attendanceId}`);
+export const getAttendanceByStudent = async (
+  studentId: string
+): Promise<(Attendance & { id: string })[]> => {
+  const snapshot = await attendanceCollection.where('student_id', '==', studentId).get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Attendance>(snapshot.docs);
+};
+
+export const getAttendanceBySection = async (
+  sectionId: string,
+  date?: string
+): Promise<(Attendance & { id: string })[]> => {
+  let query = attendanceCollection.where('section_id', '==', sectionId);
+  if (date) query = query.where('date', '==', date) as typeof query;
+  const snapshot = await query.get();
+  if (snapshot.empty) return [];
+  return docsToFlat<Attendance>(snapshot.docs);
+};
+
+export const addAttendance = async (
+  data: Omit<Attendance, 'created_at' | 'updated_at'>
+): Promise<string> => {
+  const docRef = await attendanceCollection.add({ ...data, created_at: now(), updated_at: now() });
+  logger.info(`Attendance added with ID: ${docRef.id}`);
+  return docRef.id;
+};
+
+export const updateAttendance = async (id: string, data: Partial<Attendance>): Promise<boolean> => {
+  const docRef = attendanceCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No attendance record found with ID: ${id}`);
     return false;
   }
-  const deletePromises = attendanceData.map(({ id }) => {
-    logger.info(`Deleting attendance with ID: ${id}`);
-    return attendanceCollection.doc(id).delete();
-  });
-
-  await Promise.all(deletePromises);
-  logger.info(
-    `Deleted ${attendanceData.length} attendance(s) with ID: ${attendanceId}`
-  );
+  await docRef.update({ ...data, updated_at: now() });
+  logger.info(`Updated attendance with ID: ${id}`);
   return true;
 };
 
-export const searchAttendance = async (
-  attendanceId: string
-): Promise<{ id: string; attendance: Attendance | null }[]> => {
-  const snapshot = await attendanceCollection
-    .where('attendanceId', '==', attendanceId)
-    .get();
-  if (snapshot.empty) {
-    logger.info(`No attendance found with ID: ${attendanceId}`);
-    return [];
-  }
-  logger.info(`Attendance found with ID: ${attendanceId}`);
-  return mapDocsWithKey<Attendance, 'attendance'>(snapshot.docs, 'attendance');
-};
-
-export const getAllAttendanceDetails = async (): Promise<
-  { id: string; attendance: Attendance | null }[]
-> => {
-  const snapshot = await attendanceCollection.get();
-  if (snapshot.empty) {
-    logger.info(`No attendance found in the database`);
-    return [];
-  }
-  logger.info(`Fetched all attendance from the database`);
-  return mapDocsWithKey<Attendance, 'attendance'>(snapshot.docs, 'attendance');
-};
-
-export const updateAttendance = async (
-  attendanceId: string,
-  data: Partial<Attendance>
-): Promise<boolean> => {
-  logger.info(`Updating attendance with ID: ${attendanceId}`);
-  const attendanceData = await getAttendance(attendanceId);
-  if (!attendanceData.length || attendanceData[0].attendance === null) {
-    logger.info(`No attendance found to update with ID: ${attendanceId}`);
+export const deleteAttendance = async (id: string): Promise<boolean> => {
+  const docRef = attendanceCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    logger.info(`No attendance record found with ID: ${id}`);
     return false;
   }
-  const updatePromises = attendanceData.map(({ id }) => {
-    const attendanceRef = attendanceCollection.doc(id);
-    return attendanceRef.update(data);
-  });
-  await Promise.all(updatePromises);
-  logger.info(
-    `Updated ${attendanceData.length} attendance(s) with ID: ${attendanceId}`
-  );
+  await docRef.delete();
+  logger.info(`Deleted attendance with ID: ${id}`);
   return true;
 };

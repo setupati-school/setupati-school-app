@@ -1,16 +1,14 @@
-import { DocumentData } from 'firebase/firestore';
+import type admin from 'firebase-admin';
 
-export const mapDocsWithKey = <T, K extends string>(
-  docs: DocumentData[],
-  key: K
-): ({ id: string } & Record<K, T | null>)[] => {
-  return docs.map(
-    (doc) =>
-      ({
-        id: doc.id,
-        [key]: doc.data() as T
-      }) as { id: string } & Record<K, T | null>
-  );
-};
+export const now = (): string => new Date().toISOString();
 
-export const now = new Date().toISOString();
+export const docToFlat = <T extends object>(
+  doc: admin.firestore.DocumentSnapshot
+): T & { id: string } => ({
+  id: doc.id,
+  ...(doc.data() as T)
+});
+
+export const docsToFlat = <T extends object>(
+  docs: admin.firestore.QueryDocumentSnapshot[]
+): (T & { id: string })[] => docs.map((doc) => docToFlat<T>(doc));

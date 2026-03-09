@@ -1,59 +1,54 @@
 import { Router } from 'express';
 import {
-  createExamTimeTable,
-  searchExamTimeTable,
-  deleteExamTimeTableDetails,
-  getAllExamTimeTablesDetails,
-  updateExamTimeTableDetails
+  createExamTimetable,
+  getExamTimetable,
+  getAllExamTimetablesHandler,
+  getExamTimetablesByGradeHandler,
+  updateExamTimetableHandler,
+  deleteExamTimetableHandler
 } from '../service/examtimetable/examtimetable.js';
 import { isAuthenticated } from '../middlewares/isAuthenticated.js';
 import { isAuthorized } from '../middlewares/isAuthorized.js';
 import { validateBody } from '../middlewares/validateRequest.js';
-import {
-  createExamTimetableSchema,
-  updateExamTimetableSchema
-} from '../zod/examTimetableSchema.js';
+import { createExamTimetableSchema, updateExamTimetableSchema } from '../zod/examTimetableSchema.js';
 
-const examTimeTableRouter = Router();
+const examTimetableRouter = Router();
 
-examTimeTableRouter.post(
+examTimetableRouter.post(
   '/create',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(createExamTimetableSchema),
-  (req,res) =>  {
-    createExamTimeTable(req, res)
-  }
+  (req, res) => createExamTimetable(req, res)
 );
 
-examTimeTableRouter.get(
-  '/search/:exam_time_table_id', isAuthenticated,
-  (req, res) => {
-    searchExamTimeTable(req, res);
-  }
-);
+examTimetableRouter.get('/all', isAuthenticated, (req, res) => getAllExamTimetablesHandler(req, res));
 
-examTimeTableRouter.delete(
-  '/delete/:exam_time_table_id',
+examTimetableRouter.get(
+  '/grade/:grade_id',
   isAuthenticated,
-  isAuthorized({ hasRole: ['admin'] }),
-  (req, res) => {
-    deleteExamTimeTableDetails(req, res);
-  }
+  (req, res) => getExamTimetablesByGradeHandler(req, res)
 );
 
-examTimeTableRouter.get('/all',isAuthenticated, (req, res) => {
-  return getAllExamTimeTablesDetails(req, res);
-});
+examTimetableRouter.get(
+  '/:exam_timetable_id',
+  isAuthenticated,
+  (req, res) => getExamTimetable(req, res)
+);
 
-examTimeTableRouter.put(
-  '/update/:exam_time_table_id',
+examTimetableRouter.put(
+  '/:exam_timetable_id',
   isAuthenticated,
   isAuthorized({ hasRole: ['admin'] }),
   validateBody(updateExamTimetableSchema),
-  (req, res) => {
-  updateExamTimeTableDetails(req, res);
-  }
+  (req, res) => updateExamTimetableHandler(req, res)
 );
 
-export default examTimeTableRouter;
+examTimetableRouter.delete(
+  '/:exam_timetable_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteExamTimetableHandler(req, res)
+);
+
+export default examTimetableRouter;

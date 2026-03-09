@@ -1,25 +1,17 @@
 import { Request, Response } from 'express';
 import {
+  getAllSubjects,
+  getSubjectById,
   addSubject,
-  deleteSubject,
-  getAllSubjectDetails,
-  searchSubject as searchSubjectApi,
-  updateSubject
+  updateSubject,
+  deleteSubject
 } from '../../api/subject/subject.js';
-import logger from '../../utils/logger.js';
 import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
-
-interface SubjectWithDates extends Record<string, unknown> {
-  subject_name?: string;
-  grade_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import logger from '../../utils/logger.js';
 
 export const createSubject = async (req: Request, res: Response) => {
   try {
-    const data = req?.body || {};
-    const id = await addSubject(data);
+    const id = await addSubject(req.body);
     res.status(201).json({ id });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
@@ -28,55 +20,22 @@ export const createSubject = async (req: Request, res: Response) => {
   }
 };
 
-export const searchSubject = async (req: Request, res: Response) => {
+export const getSubject = async (req: Request, res: Response) => {
   try {
-    const { subject_id: subjectId } = req?.params || {};
-    const subjects = await searchSubjectApi(subjectId);
-    res.status(200).json(subjects);
+    const { subject_id } = req.params;
+    const subject = await getSubjectById(subject_id);
+    if (!subject) return res.status(404).json({ error: 'Subject not found' });
+    res.status(200).json({ subject });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
-    logger.error('Error searching for subjects:', message);
+    logger.error('Error fetching subject:', message);
     res.status(httpCode).json({ error: message });
   }
 };
 
-export const deleteSubjectDetails = async (
-  req: Request,
-  res: Response
-): Promise<Response | void> => {
+export const getAllSubjectsHandler = async (req: Request, res: Response) => {
   try {
-    const { subject_id: subjectId } = req?.params || {};
-    const deleted = await deleteSubject(subjectId);
-    logger.info('deleted subject data', deleted);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Subject not found' });
-    }
-    res.status(204).json({});
-  } catch (error) {
-    const { httpCode, message } = firebaseErrorParser(error);
-    logger.error('Error deleting subject details:', message);
-    res.status(httpCode).json({ error: message });
-  }
-};
-
-export const getAllSubjects = async (req: Request, res: Response) => {
-  try {
-    const rawSubjects = await getAllSubjectDetails();
-
-    const subjects = rawSubjects
-      ?.filter((item) => item?.subject !== null)
-      ?.map((item) => ({
-        id: item?.id,
-        ...(item?.subject as SubjectWithDates)
-      })) || [];
-
-    // Sort by subject name
-    subjects?.sort((a, b) => {
-      const nameA = (a?.subject_name || '').toLowerCase();
-      const nameB = (b?.subject_name || '').toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
-
+    const subjects = await getAllSubjects();
     res.status(200).json({ subjects });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
@@ -85,18 +44,28 @@ export const getAllSubjects = async (req: Request, res: Response) => {
   }
 };
 
-export const updateSubjectDetails = async (req: Request, res: Response) => {
+export const updateSubjectHandler = async (req: Request, res: Response) => {
   try {
-    const { subject_id: subjectId } = req?.params || {};
-    const data = req?.body || {};
-    const updated = await updateSubject(subjectId, data);
-    if (!updated) {
-      return res.status(404).json({ error: 'Subject not found' });
-    }
-    res.status(204).json({});
+    const { subject_id } = req.params;
+    const updated = await updateSubject(subject_id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Subject not found' });
+    res.status(204).send();
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
-    logger.error('Error updating subject details:', message);
+    logger.error('Error updating subject:', message);
+    res.status(httpCode).json({ error: message });
+  }
+};
+
+export const deleteSubjectHandler = async (req: Request, res: Response) => {
+  try {
+    const { subject_id } = req.params;
+    const deleted = await deleteSubject(subject_id);
+    if (!deleted) return res.status(404).json({ error: 'Subject not found' });
+    res.status(204).send();
+  } catch (error) {
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting subject:', message);
     res.status(httpCode).json({ error: message });
   }
 };

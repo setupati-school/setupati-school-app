@@ -1,46 +1,39 @@
-import { Router, Request, Response } from 'express';
-import type grade from '@setupati-school/setupati-types/models';
+import { Router } from 'express';
 import {
   createGrade,
-  deleteGradeDetails,
-  getAllGrades,
-  searchGrade,
-  updateGradeDetails
+  getGrade,
+  getAllGradesHandler,
+  updateGradeHandler,
+  deleteGradeHandler
 } from '../service/grade/grade.js';
-
-type Grade = typeof grade;
+import { isAuthenticated } from '../middlewares/isAuthenticated.js';
+import { isAuthorized } from '../middlewares/isAuthorized.js';
 
 const gradeRouter = Router();
 
-gradeRouter.post('/create', (req: Request<{ Grade: Grade }>, res: Response) => {
-  createGrade(req, res);
-});
-gradeRouter.get(
-  '/search/:grade_id',
-  (req: Request<{ grade_id: string }>, res: Response) => {
-    searchGrade(req, res);
-  }
+gradeRouter.post(
+  '/create',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => createGrade(req, res)
+);
+
+gradeRouter.get('/all', isAuthenticated, (req, res) => getAllGradesHandler(req, res));
+
+gradeRouter.get('/:grade_id', isAuthenticated, (req, res) => getGrade(req, res));
+
+gradeRouter.put(
+  '/:grade_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => updateGradeHandler(req, res)
 );
 
 gradeRouter.delete(
-  '/delete/:grade_id',
-  (req: Request<{ grade_id: string }>, res: Response) => {
-    deleteGradeDetails(req, res);
-  }
-);
-
-gradeRouter.get('/all', (req: Request, res: Response) => {
-  return getAllGrades(req, res);
-});
-
-gradeRouter.put(
-  '/update/:grade_id',
-  (
-    req: Request<{ grade_id: string; Grade: Partial<Grade> }>,
-    res: Response
-  ) => {
-    updateGradeDetails(req, res);
-  }
+  '/:grade_id',
+  isAuthenticated,
+  isAuthorized({ hasRole: ['admin'] }),
+  (req, res) => deleteGradeHandler(req, res)
 );
 
 export default gradeRouter;

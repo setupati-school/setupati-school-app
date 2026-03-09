@@ -1,33 +1,19 @@
 import { Request, Response } from 'express';
-import logger from '../../utils/logger.js';
 import {
-  addEventBlog,
-  deleteEventBlog,
   getAllEventBlogs,
   getPublishedEventBlogs,
   getEventBlogsByAuthor,
-  getEventBlog,
-  updateEventBlog
+  getEventBlogById,
+  addEventBlog,
+  updateEventBlog,
+  deleteEventBlog
 } from '../../api/eventBlog/eventBlog.js';
 import { firebaseErrorParser } from '../../Error/firebaseErrorParser.js';
-
-interface EventBlogWithDates extends Record<string, unknown> {
-  event_date?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import logger from '../../utils/logger.js';
 
 export const createEventBlog = async (req: Request, res: Response) => {
   try {
-    const data = req?.body || {};
-    const authorId = res.locals?.uid || '';
-
-    const blogData = {
-      ...data,
-      author_id: authorId
-    };
-
-    const id = await addEventBlog(blogData);
+    const id = await addEventBlog({ ...req.body, author_id: res.locals?.uid ?? '' });
     res.status(201).json({ id });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
@@ -36,54 +22,22 @@ export const createEventBlog = async (req: Request, res: Response) => {
   }
 };
 
-export const searchEventBlog = async (req: Request, res: Response) => {
+export const getEventBlog = async (req: Request, res: Response) => {
   try {
-    const { blog_id: blogId } = req?.params || {};
-    const blogs = await getEventBlog(blogId);
-    res.status(200).json(blogs);
+    const { blog_id } = req.params;
+    const blog = await getEventBlogById(blog_id);
+    if (!blog) return res.status(404).json({ error: 'Event blog not found' });
+    res.status(200).json({ blog });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
-    logger.error('Error searching for event blog:', message);
-    res.status(httpCode).json({ error: message });
-  }
-};
-
-export const deleteEventBlogDetails = async (
-  req: Request,
-  res: Response
-): Promise<Response | void> => {
-  try {
-    const { blog_id: blogId } = req?.params || {};
-    const deleted = await deleteEventBlog(blogId);
-    logger.info('deleted event blog data', deleted);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Event blog not found' });
-    }
-    res.status(204).json({});
-  } catch (error) {
-    const { httpCode, message } = firebaseErrorParser(error);
-    logger.error('Error deleting event blog details:', message);
+    logger.error('Error fetching event blog:', message);
     res.status(httpCode).json({ error: message });
   }
 };
 
 export const getAllEventBlogsHandler = async (req: Request, res: Response) => {
   try {
-    const rawBlogs = await getAllEventBlogs();
-
-    const blogs = rawBlogs
-      ?.filter((item) => item?.eventBlog !== null)
-      ?.map((item) => ({
-        id: item?.id,
-        ...(item?.eventBlog as EventBlogWithDates)
-      })) || [];
-
-    blogs?.sort((a, b) => {
-      const dateA = new Date(a?.event_date || 0).getTime();
-      const dateB = new Date(b?.event_date || 0).getTime();
-      return dateB - dateA;
-    });
-
+    const blogs = await getAllEventBlogs();
     res.status(200).json({ blogs });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
@@ -94,25 +48,7 @@ export const getAllEventBlogsHandler = async (req: Request, res: Response) => {
 
 export const getPublishedEventBlogsHandler = async (req: Request, res: Response) => {
   try {
-    logger.info('Fetching published event blogs for public gallery');
-    const rawBlogs = await getPublishedEventBlogs();
-    logger.info(`Raw blogs fetched: ${rawBlogs.length} items`);
-
-    const blogs = rawBlogs
-      ?.filter((item) => item?.eventBlog !== null)
-      ?.map((item) => ({
-        id: item?.id,
-        ...(item?.eventBlog as EventBlogWithDates)
-      })) || [];
-
-    logger.info(`Processed blogs: ${blogs.length} items`);
-
-    blogs?.sort((a, b) => {
-      const dateA = new Date(a?.event_date || 0).getTime();
-      const dateB = new Date(b?.event_date || 0).getTime();
-      return dateB - dateA;
-    });
-
+    const blogs = await getPublishedEventBlogs();
     res.status(200).json({ blogs });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
@@ -123,22 +59,7 @@ export const getPublishedEventBlogsHandler = async (req: Request, res: Response)
 
 export const getMyEventBlogsHandler = async (req: Request, res: Response) => {
   try {
-    const authorId = res.locals?.uid || '';
-    const rawBlogs = await getEventBlogsByAuthor(authorId);
-
-    const blogs = rawBlogs
-      ?.filter((item) => item?.eventBlog !== null)
-      ?.map((item) => ({
-        id: item?.id,
-        ...(item?.eventBlog as EventBlogWithDates)
-      })) || [];
-
-    blogs?.sort((a, b) => {
-      const dateA = new Date(a?.event_date || 0).getTime();
-      const dateB = new Date(b?.event_date || 0).getTime();
-      return dateB - dateA;
-    });
-
+    const blogs = await getEventBlogsByAuthor(res.locals?.uid ?? '');
     res.status(200).json({ blogs });
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
@@ -147,18 +68,28 @@ export const getMyEventBlogsHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const updateEventBlogDetails = async (req: Request, res: Response) => {
+export const updateEventBlogHandler = async (req: Request, res: Response) => {
   try {
-    const { blog_id: blogId } = req?.params || {};
-    const data = req?.body || {};
-    const updated = await updateEventBlog(blogId, data);
-    if (!updated) {
-      return res.status(404).json({ error: 'Event blog not found' });
-    }
-    res.status(204).json({});
+    const { blog_id } = req.params;
+    const updated = await updateEventBlog(blog_id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Event blog not found' });
+    res.status(204).send();
   } catch (error) {
     const { httpCode, message } = firebaseErrorParser(error);
-    logger.error('Error updating event blog details:', message);
+    logger.error('Error updating event blog:', message);
+    res.status(httpCode).json({ error: message });
+  }
+};
+
+export const deleteEventBlogHandler = async (req: Request, res: Response) => {
+  try {
+    const { blog_id } = req.params;
+    const deleted = await deleteEventBlog(blog_id);
+    if (!deleted) return res.status(404).json({ error: 'Event blog not found' });
+    res.status(204).send();
+  } catch (error) {
+    const { httpCode, message } = firebaseErrorParser(error);
+    logger.error('Error deleting event blog:', message);
     res.status(httpCode).json({ error: message });
   }
 };

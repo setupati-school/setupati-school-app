@@ -8,41 +8,18 @@ export interface User {
   updated_at: string;
 }
 
-export interface Teacher {
-  id: string;
-  subject_ids?: string[];
-  section_ids?: string[];
-  subject_id?: string[];
-  section_id?: string[];
-  first_name?: string;
-  last_name?: string;
-  f_name?: string;
-  l_name?: string;
-  email?: string;
-  phone_num?: string;
-  dob: string;
-  gender: string;
-  designation: string;
-  qualification: string;
-  doj: string;
-  experienced_years: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Student {
   id: string;
-  section_id: string;
-  subject_ids: string[];
-  roll_no: string;
-  dob: string;
   f_name: string;
   l_name: string;
-  gender: string;
-  blood_group: string;
-  aadhar_no: string;
-  phone_num1: string;
-  phone_num2?: string;
+  email: string;
+  roll_no: string;
+  grade_id: string;
+  section_id: string;
+  parent_id: string;
+  dob: string;
+  gender: 'Male' | 'Female' | 'Other';
+  phone_num: string;
   address_line1: string;
   address_line2?: string;
   landmark?: string;
@@ -50,17 +27,45 @@ export interface Student {
   state: string;
   country: string;
   pincode: string;
+  blood_group: string;
+  aadhar_no: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface Subject {
+export interface Teacher {
   id: string;
-  subject_id?: string;
-  subject_name: string;
-  grade_id: string;
-  teacher_id?: string;
-  description?: string;
+  f_name: string;
+  l_name: string;
+  email: string;
+  designation: string;
+  dob: string;
+  doj: string;
+  experienced_years: number;
+  gender: 'Male' | 'Female' | 'Other';
+  qualification: string;
+  phone_num: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Parent {
+  id: string;
+  f_name: string;
+  l_name: string;
+  dob: string;
+  gender: 'Male' | 'Female' | 'Other';
+  occupation: string;
+  relation: 'Father' | 'Mother' | 'Guardian';
+  phone_num: string;
+  student_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Grade {
+  id: string;
+  grade_name: string;
   created_at: string;
   updated_at: string;
 }
@@ -75,15 +80,10 @@ export interface Section {
   updated_at: string;
 }
 
-export interface Grade {
+export interface Subject {
   id: string;
-  grade_id?: string;
-  grade_name: string;
-  section_ids: string[];
-  subject_ids: string[];
-  subject_name: string[];
-  ahm_staff_id: string;
-  teacher_id?: string;
+  subject_name: string;
+  grade_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -103,14 +103,21 @@ export interface Circular {
   title: string;
   description: string;
   issued_by: string;
-  targeted_group: string;
   issued_date: string;
   valid_until: string;
+  targeted_group: 'All' | 'Students' | 'Teachers' | 'Parents';
+  attachment_url?: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export type EventCategory = 'Sports' | 'Academic' | 'Cultural' | 'Ceremony' | 'Community' | 'Other';
+export type EventCategory =
+  | 'Sports'
+  | 'Academic'
+  | 'Cultural'
+  | 'Ceremony'
+  | 'Community'
+  | 'Other';
 
 export interface EventBlog {
   id: string;
@@ -119,23 +126,9 @@ export interface EventBlog {
   category: EventCategory;
   event_date: string;
   author_name: string;
-  author_id?: string;
+  author_id: string;
   images: string[];
   is_published: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Homework {
-  id: string;
-  section_id: string;
-  subject_id: string;
-  teacher_id: string;
-  title: string;
-  description: string;
-  due_date: string;
-  created_date: string;
-  remarks?: string;
   created_at: string;
   updated_at: string;
 }
@@ -149,8 +142,7 @@ export type DayOfWeek =
   | 'Saturday';
 
 export interface Timetable {
-  id?: string;
-  timetable_id?: string;
+  id: string;
   day_of_week: DayOfWeek;
   period: number;
   section_id: string;
@@ -160,41 +152,52 @@ export interface Timetable {
   updated_at: string;
 }
 
-// API response wrapper for timetable
-export interface TimetableResponse {
-  id: string;
-  timeTable: Timetable;
-}
-
 export type ExamType = 'Unit Test' | 'Quarterly' | 'Half-Yearly' | 'Annual';
 
 export interface ExamTimetable {
-  id?: string;
-  exam_time_table_id?: string;
+  id: string;
   grade_id: string;
   subject_id: string;
-  date?: string;
-  exam_date?: string;
-  start_date?: string;
-  start_time?: string;
-  end_time?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
   exam_type: ExamType;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// API response wrapper for exam timetable
-export interface ExamTimetableResponse {
+export interface SubjectMark {
+  subject_id: string;
+  marks: number;
+}
+
+export interface ExamResult {
   id: string;
-  examTimeTable: ExamTimetable;
+  student_id: string;
+  exam_id: string;
+  subjects: SubjectMark[];
+  total: number;
+  pass_or_fail: 'pass' | 'fail';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Homework {
+  id: string;
+  section_id: string;
+  subject_id: string;
+  teacher_id: string;
+  title: string;
+  description: string;
+  due_date: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Store interface
 export interface SchoolStore {
-  // Current user
   currentUser: User | null;
 
-  // Data
   teachers: Teacher[];
   students: Student[];
   subjects: Subject[];
@@ -207,18 +210,17 @@ export interface SchoolStore {
   examTimetables: ExamTimetable[];
   exams: any[];
 
-  // UI State
   activeView: string;
   sidebarCollapsed: boolean;
   loading: boolean;
+  currentLanguage: string;
 
-  // Actions
   setCurrentUser: (user: User | null) => void;
   setActiveView: (view: string) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setLoading: (loading: boolean) => void;
+  setCurrentLanguage: (code: string) => void;
 
-  // Data actions
   setTeachers: (teachers: Teacher[]) => void;
   setStudents: (students: Student[]) => void;
   setSubjects: (subjects: Subject[]) => void;
@@ -230,20 +232,19 @@ export interface SchoolStore {
   setTimetables: (timetables: Timetable[]) => void;
   setExamTimetables: (examTimetables: ExamTimetable[]) => void;
   setExams: (exams: any[]) => void;
+
   fetchExamsFromBackend: (studentId?: string) => Promise<any[]>;
   getMyResults: () => any[];
   getSubjectById: (id?: string) => Subject | null;
   getExamById: (id?: string) => any | null;
-  addAttendance?: (record: Partial<Attendance> & { id: string }) => void;
+  addAttendance?: (record: Attendance) => void;
   updateAttendance?: (id: string, patch: Partial<Attendance>) => void;
 
-  // Statistics
   getStudentCount: () => number;
   getTeacherCount: () => number;
   getPresentStudentsToday: () => number;
   getRecentCirculars: () => Circular[];
 
-  // Student-specific methods
   getMyStudent: () => Student | null;
   getMyAttendance: () => Attendance[];
   getMyTimetable: () => Timetable[];
@@ -252,4 +253,5 @@ export interface SchoolStore {
   getMyGrade: () => Grade | null;
 
   initCurrentUser: () => void;
+  resetStore: () => void;
 }
